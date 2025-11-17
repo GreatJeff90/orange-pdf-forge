@@ -1,8 +1,15 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export const Header = () => {
+export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -11,6 +18,7 @@ export const Header = () => {
     } else {
       root.classList.remove("light");
     }
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -22,9 +30,7 @@ export const Header = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center">
           <div className="w-10 h-10 rounded-xl gradient-orange flex items-center justify-center mr-3">
-            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-            </svg>
+            <FileText className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
@@ -49,6 +55,18 @@ export const Header = () => {
           </div>
         </div>
       </div>
+
+      {showUserInfo && (
+        <div className="flex items-center mt-4">
+          <div className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold mr-3">
+            <span>JS</span>
+          </div>
+          <div>
+            <p className="font-medium">John Smith</p>
+            <p className="text-xs text-muted-foreground">Premium Member</p>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
