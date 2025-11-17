@@ -1,14 +1,14 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 
-const Index = () => {
+const Earn = () => {
   return (
     <div className="max-w-md mx-auto min-h-screen pb-24">
       <Header />
       <main className="p-4">
         <div className="glass-effect rounded-2xl p-6 text-center">
-          <h2 className="text-2xl font-bold mb-2">PDF Conversion Tools</h2>
-          <p className="text-muted-foreground">Home page coming soon...</p>
+          <h2 className="text-2xl font-bold mb-2">Earn Coins</h2>
+          <p className="text-muted-foreground">Coming soon...</p>
         </div>
       </main>
       <BottomNav />
@@ -16,4 +16,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Earn;
