@@ -1,8 +1,15 @@
-import { Moon, Sun, FileText } from "lucide-react";
+import { Moon, Sun, FileText, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "./ui/button";
 
 export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
@@ -21,8 +28,37 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Logged out",
+        description: "You've been successfully logged out.",
+      });
+      navigate("/onboarding");
+    }
   };
 
   return (
@@ -50,8 +86,19 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
               <Sun className="w-5 h-5" />
             )}
           </button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="w-10 h-10 rounded-full glass-effect hover:bg-orange-500/20"
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
+          
           <div className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold">
-            <span>JS</span>
+            <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
           </div>
         </div>
       </div>
@@ -59,10 +106,10 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
       {showUserInfo && (
         <div className="flex items-center mt-4">
           <div className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold mr-3">
-            <span>JS</span>
+            <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
           </div>
           <div>
-            <p className="font-medium">John Smith</p>
+            <p className="font-medium">{user?.email?.split('@')[0] || "User"}</p>
             <p className="text-xs text-muted-foreground">Premium Member</p>
           </div>
         </div>
