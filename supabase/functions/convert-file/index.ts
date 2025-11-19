@@ -111,10 +111,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("Starting conversion:", { conversionType, inputFilePath, user: user.id });
 
-    // Check if user has enough coins
+    // Conversions are FREE - just verify user profile exists
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("coins")
+      .select("id")
       .eq("id", user.id)
       .single();
 
@@ -122,17 +122,8 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error fetching profile:", profileError);
       throw new Error("Failed to fetch user profile");
     }
-
-    if (profile.coins < cost) {
-      console.log("Insufficient coins:", { has: profile.coins, needs: cost });
-      return new Response(
-        JSON.stringify({ error: "Insufficient coins" }),
-        {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    
+    console.log("Conversion is free - no coin check needed");
 
     // Create conversion record
     const { data: conversion, error: insertError } = await supabase
@@ -153,26 +144,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Conversion record created:", conversion.id);
-
-    // Deduct coins using the database function
-    const { data: deductResult, error: deductError } = await supabase.rpc("deduct_coins", {
-      p_user_id: user.id,
-      p_amount: cost,
-      p_description: `${conversionType} conversion`,
-      p_conversion_id: conversion.id,
-    });
-
-    if (deductError || !deductResult) {
-      console.error("Error deducting coins:", deductError);
-      // Mark conversion as failed
-      await supabase
-        .from("conversions")
-        .update({ status: "failed", error_message: "Failed to deduct coins" })
-        .eq("id", conversion.id);
-      throw new Error("Failed to deduct coins");
-    }
-
-    console.log("Coins deducted successfully");
+    
+    // Conversions are FREE - no coin deduction needed
+    console.log("Starting free conversion for user:", user.id);
 
     // Get the file from storage
     const { data: fileData, error: downloadError } = await supabase.storage
