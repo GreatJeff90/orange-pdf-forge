@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -21,6 +22,92 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { email, resetLink }: PasswordResetRequest = await req.json();
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      console.warn("Invalid email format:", email);
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Initialize Supabase client with service role key for rate limiting
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get client IP address for rate limiting
+    const clientIP = req.headers.get("x-forwarded-for") || 
+                     req.headers.get("x-real-ip") || 
+                     "unknown";
+
+    // Check rate limit by email (max 3 attempts per hour per email)
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const { data: emailAttempts, error: emailError } = await supabase
+      .from("password_reset_attempts")
+      .select("id")
+      .eq("email", email)
+      .gte("created_at", oneHourAgo);
+
+    if (emailError) {
+      console.error("Error checking email rate limit:", emailError);
+    }
+
+    if (emailAttempts && emailAttempts.length >= 3) {
+      console.warn(`Rate limit exceeded for email: ${email}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many password reset requests. Please try again later." 
+        }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Check rate limit by IP (max 5 attempts per hour per IP)
+    if (clientIP !== "unknown") {
+      const { data: ipAttempts, error: ipError } = await supabase
+        .from("password_reset_attempts")
+        .select("id")
+        .eq("ip_address", clientIP)
+        .gte("created_at", oneHourAgo);
+
+      if (ipError) {
+        console.error("Error checking IP rate limit:", ipError);
+      }
+
+      if (ipAttempts && ipAttempts.length >= 5) {
+        console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+        return new Response(
+          JSON.stringify({ 
+            error: "Too many password reset requests. Please try again later." 
+          }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    }
+
+    // Log the attempt
+    const { error: logError } = await supabase
+      .from("password_reset_attempts")
+      .insert({
+        email: email,
+        ip_address: clientIP,
+      });
+
+    if (logError) {
+      console.error("Error logging reset attempt:", logError);
+    }
 
     console.log("Sending password reset email to:", email);
 
