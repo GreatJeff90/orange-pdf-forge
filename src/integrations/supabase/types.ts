@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversions: {
+        Row: {
+          completed_at: string | null
+          conversion_type: Database["public"]["Enums"]["conversion_type"]
+          cost: number
+          created_at: string
+          error_message: string | null
+          id: string
+          input_file_path: string
+          output_file_path: string | null
+          status: Database["public"]["Enums"]["conversion_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conversion_type: Database["public"]["Enums"]["conversion_type"]
+          cost?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_file_path: string
+          output_file_path?: string | null
+          status?: Database["public"]["Enums"]["conversion_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          conversion_type?: Database["public"]["Enums"]["conversion_type"]
+          cost?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_file_path?: string
+          output_file_path?: string | null
+          status?: Database["public"]["Enums"]["conversion_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -49,7 +91,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      conversion_status: "pending" | "processing" | "completed" | "failed"
+      conversion_type:
+        | "pdf_to_word"
+        | "pdf_to_excel"
+        | "word_to_pdf"
+        | "excel_to_pdf"
+        | "compress_pdf"
+        | "merge_pdf"
+        | "split_pdf"
+        | "pdf_to_jpg"
+        | "jpg_to_pdf"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -176,6 +228,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      conversion_status: ["pending", "processing", "completed", "failed"],
+      conversion_type: [
+        "pdf_to_word",
+        "pdf_to_excel",
+        "word_to_pdf",
+        "excel_to_pdf",
+        "compress_pdf",
+        "merge_pdf",
+        "split_pdf",
+        "pdf_to_jpg",
+        "jpg_to_pdf",
+      ],
+    },
   },
 } as const
