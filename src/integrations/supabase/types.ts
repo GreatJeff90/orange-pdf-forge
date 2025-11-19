@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      coin_packages: {
+        Row: {
+          coins: number
+          created_at: string
+          id: string
+          name: string
+          popular: boolean | null
+          price: number
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          id?: string
+          name: string
+          popular?: boolean | null
+          price: number
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          id?: string
+          name?: string
+          popular?: boolean | null
+          price?: number
+        }
+        Relationships: []
+      }
       conversions: {
         Row: {
           completed_at: string | null
@@ -59,6 +86,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          coins: number
           created_at: string | null
           email: string
           full_name: string | null
@@ -67,6 +95,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          coins?: number
           created_at?: string | null
           email: string
           full_name?: string | null
@@ -75,6 +104,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          coins?: number
           created_at?: string | null
           email?: string
           full_name?: string | null
@@ -83,12 +113,62 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          conversion_id: string | null
+          created_at: string
+          description: string
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          conversion_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          conversion_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_conversion_id_fkey"
+            columns: ["conversion_id"]
+            isOneToOne: false
+            referencedRelation: "conversions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_coins: {
+        Args: { p_amount: number; p_description: string; p_user_id: string }
+        Returns: undefined
+      }
+      deduct_coins: {
+        Args: {
+          p_amount: number
+          p_conversion_id?: string
+          p_description: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       conversion_status: "pending" | "processing" | "completed" | "failed"

@@ -1,15 +1,17 @@
-import { Moon, Sun, FileText, LogOut } from "lucide-react";
+import { Moon, Sun, FileText, LogOut, Coins } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
+import { useUserCoins } from "@/hooks/useCoins";
 
 export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: coins } = useUserCoins();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
@@ -76,6 +78,14 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          <div 
+            onClick={() => navigate("/profile")}
+            className="glass-effect px-3 py-1.5 rounded-full flex items-center gap-2 cursor-pointer hover:bg-secondary/50 transition-colors"
+          >
+            <Coins className="w-4 h-4 text-orange" />
+            <span className="text-sm font-bold text-orange">{coins?.toLocaleString() || 0}</span>
+          </div>
+
           <button
             onClick={toggleTheme}
             className="glass-effect w-10 h-10 rounded-full flex items-center justify-center hover:rotate-[30deg] transition-transform duration-300"

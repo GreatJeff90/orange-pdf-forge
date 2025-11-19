@@ -76,11 +76,22 @@ export const ConversionModal = ({
 
         if (error) {
           console.error("Conversion error:", error);
-          toast({
-            title: "Conversion failed",
-            description: error.message || "Failed to start conversion",
-            variant: "destructive",
-          });
+          
+          // Check if it's an insufficient coins error
+          if (error.message?.includes("Insufficient coins")) {
+            toast({
+              title: "Insufficient coins",
+              description: "You don't have enough coins for this conversion. Please purchase more coins.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Conversion failed",
+              description: error.message || "Failed to start conversion",
+              variant: "destructive",
+            });
+          }
+          return;
         } else {
           console.log("Conversion started:", data);
         }
