@@ -8,11 +8,11 @@ interface BannerAdProps {
 
 export const BannerAd = ({ className = '' }: BannerAdProps) => {
   const { showBannerAd, hideBannerAd, removeBannerAd, isNative } = useAdMob();
-  const { data: coins } = useUserCoins();
+  const { data: userCoins } = useUserCoins();
 
   useEffect(() => {
-    // Only show ads if user has less than 1000 coins (not ad-free)
-    const shouldShowAd = coins !== undefined && coins < 1000;
+    // Only show ads if user is not ad-free (based on ad_free_until timestamp)
+    const shouldShowAd = userCoins !== undefined && !userCoins.isAdFree;
 
     if (shouldShowAd && isNative) {
       showBannerAd();
@@ -23,10 +23,10 @@ export const BannerAd = ({ className = '' }: BannerAdProps) => {
         removeBannerAd();
       }
     };
-  }, [coins, isNative, showBannerAd, removeBannerAd]);
+  }, [userCoins, isNative, showBannerAd, removeBannerAd]);
 
   // For web preview, show a placeholder
-  if (!isNative && coins !== undefined && coins < 1000) {
+  if (!isNative && userCoins !== undefined && !userCoins.isAdFree) {
     return (
       <div className={`bg-muted border border-border rounded-lg p-4 text-center ${className}`}>
         <p className="text-xs text-muted-foreground">

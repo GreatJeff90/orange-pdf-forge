@@ -26,12 +26,16 @@ export function useUserCoins() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("coins")
+        .select("coins, ad_free_until")
         .eq("id", user.id)
         .single();
 
       if (error) throw error;
-      return data.coins as number;
+      return {
+        coins: data.coins as number,
+        adFreeUntil: data.ad_free_until as string | null,
+        isAdFree: data.ad_free_until ? new Date(data.ad_free_until) > new Date() : false,
+      };
     },
   });
 }
@@ -92,6 +96,14 @@ export function useAddCoins() {
     });
 
     if (addError) throw addError;
+
+    // Extend ad-free time based on coins purchased
+    const { error: extendError } = await supabase.rpc("extend_ad_free_time", {
+      p_user_id: user.id,
+      p_coins: pkg.coins,
+    });
+
+    if (extendError) throw extendError;
 
     // Invalidate queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["user-coins"] });
