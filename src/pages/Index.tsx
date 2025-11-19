@@ -28,6 +28,7 @@ const Index = () => {
       bgGradient: "bg-gradient-to-br from-blue-500 to-blue-700",
       modalTitle: "PDF to Word Conversion",
       modalDescription: "Convert PDF to editable Word document",
+      acceptedTypes: ["application/pdf"],
     },
     {
       id: "pdf-to-image" as ConversionType,
@@ -38,6 +39,7 @@ const Index = () => {
       bgGradient: "bg-gradient-to-br from-green-500 to-green-700",
       modalTitle: "PDF to Images",
       modalDescription: "Extract images from PDF document",
+      acceptedTypes: ["application/pdf"],
     },
     {
       id: "image-to-pdf" as ConversionType,
@@ -49,6 +51,7 @@ const Index = () => {
       modalTitle: "Images to PDF",
       modalDescription: "Convert images to PDF document",
       multipleFiles: true,
+      acceptedTypes: ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"],
     },
     {
       id: "pdf-merge" as ConversionType,
@@ -60,6 +63,7 @@ const Index = () => {
       modalTitle: "Merge PDF Files",
       modalDescription: "Combine multiple PDFs into one",
       multipleFiles: true,
+      acceptedTypes: ["application/pdf"],
     },
     {
       id: "pdf-split" as ConversionType,
@@ -71,6 +75,7 @@ const Index = () => {
       modalTitle: "Split PDF",
       modalDescription: "Split PDF into multiple files",
       showSplitOptions: true,
+      acceptedTypes: ["application/pdf"],
     },
     {
       id: "pdf-compress" as ConversionType,
@@ -82,6 +87,7 @@ const Index = () => {
       modalTitle: "Compress PDF",
       modalDescription: "Reduce PDF file size",
       showCompressionSlider: true,
+      acceptedTypes: ["application/pdf"],
     },
   ];
 
@@ -221,6 +227,7 @@ const Index = () => {
           showSplitOptions={option.showSplitOptions}
           showCompressionSlider={option.showCompressionSlider}
           multipleFiles={option.multipleFiles}
+          acceptedTypes={option.acceptedTypes}
         />
       ))}
     </div>

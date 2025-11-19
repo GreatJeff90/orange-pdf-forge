@@ -1,6 +1,9 @@
-import { X, Upload } from "lucide-react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import FileUpload from "./FileUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import { useToast } from "@/hooks/use-toast";
 
 interface ConversionModalProps {
   isOpen: boolean;
@@ -13,6 +16,7 @@ interface ConversionModalProps {
   showSplitOptions?: boolean;
   showCompressionSlider?: boolean;
   multipleFiles?: boolean;
+  acceptedTypes: string[];
 }
 
 export const ConversionModal = ({
@@ -26,9 +30,56 @@ export const ConversionModal = ({
   showSplitOptions = false,
   showCompressionSlider = false,
   multipleFiles = false,
+  acceptedTypes,
 }: ConversionModalProps) => {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [compressionLevel, setCompressionLevel] = useState(2);
+  const [splitOption, setSplitOption] = useState<string | null>(null);
+  const { uploadFiles, uploading, progress } = useFileUpload();
+  const { toast } = useToast();
+
+  const handleConvert = async () => {
+    if (selectedFiles.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please select files to convert",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const folderName = title.toLowerCase().replace(/\s+/g, "-");
+      const uploadedPaths = await uploadFiles(selectedFiles, {
+        folder: folderName,
+      });
+
+      console.log("Files uploaded:", uploadedPaths);
+
+      toast({
+        title: "Conversion started",
+        description: `Processing ${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""}...`,
+      });
+
+      // Reset and close
+      setSelectedFiles([]);
+      setCompressionLevel(2);
+      setSplitOption(null);
+      setTimeout(() => onClose(), 1500);
+    } catch (error) {
+      console.error("Conversion error:", error);
+    }
+  };
+
+  const handleClose = () => {
+    setSelectedFiles([]);
+    setCompressionLevel(2);
+    setSplitOption(null);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="glass-effect border-border max-w-md">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">{title}</DialogTitle>
@@ -50,34 +101,41 @@ export const ConversionModal = ({
           <label className="block text-sm font-medium mb-2">
             Upload {multipleFiles ? "Files" : "File"}
           </label>
-          <div className="border-2 border-dashed border-orange/50 rounded-xl p-6 text-center cursor-pointer hover:border-orange hover:bg-orange/5 transition-all">
-            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Drag & drop your {multipleFiles ? "files" : "file"} here
-            </p>
-            <p className="text-xs text-muted-foreground/70 mt-1">or</p>
-            <Button className="gradient-orange mt-2 text-sm px-4 py-2 hover:opacity-90 transition-opacity">
-              Browse Files
-            </Button>
-          </div>
-          {multipleFiles && (
-            <p className="text-xs text-muted-foreground mt-2">
-              {title.includes("Image") ? "Supports JPG, PNG, GIF (max 10 files)" : "Select multiple PDF files"}
-            </p>
-          )}
+          <FileUpload
+            acceptedTypes={acceptedTypes}
+            maxFiles={multipleFiles ? 10 : 1}
+            onFilesSelected={setSelectedFiles}
+            uploadProgress={progress}
+            isUploading={uploading}
+          />
         </div>
 
         {showSplitOptions && (
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">Split Options</label>
             <div className="grid grid-cols-3 gap-2">
-              <button className="glass-effect py-2 rounded-lg text-xs hover:bg-secondary/50 transition-colors">
+              <button
+                onClick={() => setSplitOption("range")}
+                className={`glass-effect py-2 rounded-lg text-xs transition-colors ${
+                  splitOption === "range" ? "bg-orange-500/20 border-2 border-orange-500" : "hover:bg-secondary/50"
+                }`}
+              >
                 By Page Range
               </button>
-              <button className="glass-effect py-2 rounded-lg text-xs hover:bg-secondary/50 transition-colors">
+              <button
+                onClick={() => setSplitOption("pages")}
+                className={`glass-effect py-2 rounded-lg text-xs transition-colors ${
+                  splitOption === "pages" ? "bg-orange-500/20 border-2 border-orange-500" : "hover:bg-secondary/50"
+                }`}
+              >
                 Every N Pages
               </button>
-              <button className="glass-effect py-2 rounded-lg text-xs hover:bg-secondary/50 transition-colors">
+              <button
+                onClick={() => setSplitOption("bookmarks")}
+                className={`glass-effect py-2 rounded-lg text-xs transition-colors ${
+                  splitOption === "bookmarks" ? "bg-orange-500/20 border-2 border-orange-500" : "hover:bg-secondary/50"
+                }`}
+              >
                 By Bookmarks
               </button>
             </div>
@@ -95,7 +153,8 @@ export const ConversionModal = ({
               type="range"
               min="1"
               max="3"
-              defaultValue="2"
+              value={compressionLevel}
+              onChange={(e) => setCompressionLevel(parseInt(e.target.value))}
               className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-orange"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -106,8 +165,14 @@ export const ConversionModal = ({
           </div>
         )}
 
-        <Button className="w-full gradient-orange py-6 text-lg font-medium hover:opacity-90 transition-opacity">
-          {title.split(" ").slice(0, 2).join(" ")} ({cost} coins)
+        <Button
+          onClick={handleConvert}
+          disabled={uploading || selectedFiles.length === 0}
+          className="w-full gradient-orange py-6 text-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {uploading
+            ? `Uploading... ${progress}%`
+            : `${title.split(" ").slice(0, 2).join(" ")} (${cost} coins)`}
         </Button>
       </DialogContent>
     </Dialog>
