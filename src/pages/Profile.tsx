@@ -13,11 +13,51 @@ import {
   LogOut,
   ChevronRight,
   Award,
-  TrendingUp
+  TrendingUp,
+  Coins,
+  Plus,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUserCoins, useTransactions } from "@/hooks/useCoins";
+import { useConversions } from "@/hooks/useConversions";
+import { CoinPurchaseModal } from "@/components/CoinPurchaseModal";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
+  const [showCoinModal, setShowCoinModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const { data: coins, isLoading: coinsLoading } = useUserCoins();
+  const { data: conversions } = useConversions();
+  const { data: transactions } = useTransactions();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        setUserProfile(data);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
+  };
+
+  const initials = userProfile?.full_name
+    ?.split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase() || "U";
+
   return (
     <div className="max-w-md mx-auto min-h-screen pb-24">
       <Header />
@@ -30,13 +70,13 @@ const Profile = () => {
           
           <div className="relative z-10 flex items-center mb-4">
             <div className="w-20 h-20 rounded-full gradient-orange flex items-center justify-center text-white font-bold text-2xl mr-4 neon-glow">
-              JS
+              {initials}
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold">John Smith</h2>
+              <h2 className="text-2xl font-bold">{userProfile?.full_name || "User"}</h2>
               <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <Mail className="w-3 h-3" />
-                john.smith@email.com
+                {userProfile?.email || "user@email.com"}
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <div className="px-3 py-1 rounded-full gradient-orange text-white text-xs font-medium flex items-center gap-1">
@@ -50,22 +90,57 @@ const Profile = () => {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mt-6 relative z-10">
             <div className="text-center">
-              <div className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                5,240
-              </div>
+              {coinsLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin mx-auto text-orange" />
+              ) : (
+                <div className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
+                  {coins?.toLocaleString() || 0}
+                </div>
+              )}
               <div className="text-xs text-muted-foreground">Coins</div>
             </div>
             <div className="text-center border-x border-border/50">
               <div className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                127
+                {conversions?.length || 0}
               </div>
               <div className="text-xs text-muted-foreground">Conversions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                45
+                {transactions?.length || 0}
               </div>
-              <div className="text-xs text-muted-foreground">Days Active</div>
+              <div className="text-xs text-muted-foreground">Transactions</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Coin Balance & Purchase */}
+        <div className="glass-effect rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Coins className="w-5 h-5 text-orange" />
+              Coin Balance
+            </h3>
+            <Button
+              onClick={() => setShowCoinModal(true)}
+              size="sm"
+              className="gradient-orange text-white hover:opacity-90"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Buy Coins
+            </Button>
+          </div>
+          <div className="flex items-center justify-between p-4 glass-effect rounded-xl">
+            <div>
+              <p className="text-sm text-muted-foreground">Available Balance</p>
+              {coinsLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-orange mt-1" />
+              ) : (
+                <p className="text-3xl font-bold text-orange">{coins?.toLocaleString() || 0}</p>
+              )}
+            </div>
+            <div className="w-16 h-16 rounded-full gradient-orange flex items-center justify-center neon-glow">
+              <Coins className="w-8 h-8 text-white" />
             </div>
           </div>
         </div>
@@ -90,135 +165,86 @@ const Profile = () => {
               <Star className="w-8 h-8 text-muted-foreground" />
             </div>
             <div className="flex-shrink-0 w-16 h-16 rounded-xl glass-effect flex items-center justify-center border-2 border-dashed border-border">
-              <Shield className="w-8 h-8 text-muted-foreground" />
+              <Coins className="w-8 h-8 text-muted-foreground" />
             </div>
           </div>
         </div>
 
-        {/* Account Settings */}
+        {/* Settings Section */}
         <div className="glass-effect rounded-2xl p-4">
-          <h3 className="font-semibold mb-3">Account Settings</h3>
-          <div className="space-y-1">
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors">
+          <h3 className="font-semibold mb-3">Settings</h3>
+          <div className="space-y-2">
+            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Edit Profile</p>
-                  <p className="text-xs text-muted-foreground">Update your information</p>
-                </div>
+                <User className="w-5 h-5 text-orange" />
+                <span className="text-sm">Edit Profile</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
 
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors">
+            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Security</p>
-                  <p className="text-xs text-muted-foreground">Password & authentication</p>
-                </div>
+                <CreditCard className="w-5 h-5 text-orange" />
+                <span className="text-sm">Payment Methods</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
 
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors">
+            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Billing & Plan</p>
-                  <p className="text-xs text-muted-foreground">Manage subscription</p>
-                </div>
+                <Shield className="w-5 h-5 text-orange" />
+                <span className="text-sm">Privacy & Security</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
+              <div className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-orange" />
+                <span className="text-sm">Notifications</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
+              <div className="flex items-center gap-3">
+                <Palette className="w-5 h-5 text-orange" />
+                <span className="text-sm">Theme</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
+              <div className="flex items-center gap-3">
+                <Globe className="w-5 h-5 text-orange" />
+                <span className="text-sm">Language</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
+              <div className="flex items-center gap-3">
+                <HelpCircle className="w-5 h-5 text-orange" />
+                <span className="text-sm">Help & Support</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
         </div>
 
-        {/* Preferences */}
-        <div className="glass-effect rounded-2xl p-4">
-          <h3 className="font-semibold mb-3">Preferences</h3>
-          <div className="space-y-1">
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-700 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Notifications</p>
-                  <p className="text-xs text-muted-foreground">Manage alerts</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 flex items-center justify-center">
-                  <Palette className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Appearance</p>
-                  <p className="text-xs text-muted-foreground">Theme & display</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center">
-                  <Globe className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Language</p>
-                  <p className="text-xs text-muted-foreground">English (US)</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
-        </div>
-
-        {/* Support */}
-        <div className="glass-effect rounded-2xl p-4">
-          <h3 className="font-semibold mb-3">Support</h3>
-          <div className="space-y-1">
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center">
-                  <HelpCircle className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">Help Center</p>
-                  <p className="text-xs text-muted-foreground">FAQs & support</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
-        </div>
-
-        {/* Logout Button */}
-        <Button 
-          variant="outline" 
-          className="w-full glass-effect border-destructive/50 text-destructive hover:bg-destructive/10 rounded-xl py-6 font-medium"
+        {/* Sign Out Button */}
+        <Button
+          onClick={handleSignOut}
+          variant="outline"
+          className="w-full glass-effect border-red-500/20 text-red-500 hover:bg-red-500/10 py-6"
         >
-          <LogOut className="w-5 h-5 mr-2" />
-          Logout
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
         </Button>
-
-        <div className="text-center text-xs text-muted-foreground py-4">
-          Version 1.0.0 • Made with ❤️
-        </div>
       </main>
 
       <BottomNav />
+      <CoinPurchaseModal isOpen={showCoinModal} onClose={() => setShowCoinModal(false)} />
     </div>
   );
 };
