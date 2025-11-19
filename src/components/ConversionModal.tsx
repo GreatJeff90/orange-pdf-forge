@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import FileUpload from "./FileUpload";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ConversionModalProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ export const ConversionModal = ({
     }
 
     try {
+      // Upload files first
       const folderName = title.toLowerCase().replace(/\s+/g, "-");
       const uploadedPaths = await uploadFiles(selectedFiles, {
         folder: folderName,
@@ -56,9 +58,37 @@ export const ConversionModal = ({
 
       console.log("Files uploaded:", uploadedPaths);
 
+      // Start conversion for each file
+      const conversionType = getConversionType(title);
+      
+      for (const filePath of uploadedPaths) {
+        const { data, error } = await supabase.functions.invoke("convert-file", {
+          body: {
+            conversionType,
+            inputFilePath: filePath,
+            cost,
+            options: {
+              compressionLevel,
+              splitOption,
+            },
+          },
+        });
+
+        if (error) {
+          console.error("Conversion error:", error);
+          toast({
+            title: "Conversion failed",
+            description: error.message || "Failed to start conversion",
+            variant: "destructive",
+          });
+        } else {
+          console.log("Conversion started:", data);
+        }
+      }
+
       toast({
         title: "Conversion started",
-        description: `Processing ${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""}...`,
+        description: `Processing ${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""}. Check History for results.`,
       });
 
       // Reset and close
@@ -69,6 +99,21 @@ export const ConversionModal = ({
     } catch (error) {
       console.error("Conversion error:", error);
     }
+  };
+
+  const getConversionType = (title: string): string => {
+    const typeMap: Record<string, string> = {
+      "PDF to Word": "pdf_to_word",
+      "PDF to Excel": "pdf_to_excel",
+      "Word to PDF": "word_to_pdf",
+      "Excel to PDF": "excel_to_pdf",
+      "Compress PDF": "compress_pdf",
+      "Merge PDFs": "merge_pdf",
+      "Split PDF": "split_pdf",
+      "PDF to JPG": "pdf_to_jpg",
+      "JPG to PDF": "jpg_to_pdf",
+    };
+    return typeMap[title] || "pdf_to_word";
   };
 
   const handleClose = () => {

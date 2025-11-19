@@ -1,1 +1,4 @@
 project_id = "ekwpzencivsehohatfuh"
+
+[functions.convert-file]
+verify_jwt = true
