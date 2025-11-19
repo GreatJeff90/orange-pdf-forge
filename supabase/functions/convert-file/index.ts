@@ -1,10 +1,48 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Validation schema for conversion requests
+const ConversionRequestSchema = z.object({
+  conversionType: z.enum([
+    'pdf_to_word',
+    'pdf_to_excel', 
+    'word_to_pdf',
+    'excel_to_pdf',
+    'compress_pdf',
+    'merge_pdf',
+    'split_pdf',
+    'pdf_to_jpg',
+    'jpg_to_pdf'
+  ]),
+  inputFilePath: z.string()
+    .min(1, "File path cannot be empty")
+    .max(500, "File path too long")
+    .regex(/^[a-zA-Z0-9/_.-]+$/, "Invalid characters in file path"),
+  cost: z.number()
+    .int("Cost must be an integer")
+    .min(0, "Cost cannot be negative")
+    .max(1000, "Cost exceeds maximum allowed"),
+  options: z.object({
+    compressionLevel: z.number()
+      .int()
+      .min(1)
+      .max(5)
+      .optional(),
+    splitOption: z.string()
+      .max(50, "Split option too long")
+      .optional(),
+    pageRange: z.string()
+      .max(50, "Page range too long")
+      .regex(/^[\d,\s-]*$/, "Invalid page range format")
+      .optional(),
+  }).optional()
+});
 
 interface ConversionRequest {
   conversionType: string;
@@ -39,7 +77,37 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Unauthorized");
     }
 
-    const { conversionType, inputFilePath, cost, options }: ConversionRequest = await req.json();
+    // Parse and validate input
+    const rawInput = await req.json();
+    const validationResult = ConversionRequestSchema.safeParse(rawInput);
+    
+    if (!validationResult.success) {
+      console.error("Input validation failed:", validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid input parameters",
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { conversionType, inputFilePath, cost, options }: ConversionRequest = validationResult.data;
+    
+    // Additional security: Verify the file path belongs to the user's directory
+    if (!inputFilePath.startsWith(`${user.id}/`)) {
+      console.error("User attempting to access unauthorized file:", { user: user.id, path: inputFilePath });
+      return new Response(
+        JSON.stringify({ error: "Access denied: Invalid file path" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
     
     console.log("Starting conversion:", { conversionType, inputFilePath, user: user.id });
 
