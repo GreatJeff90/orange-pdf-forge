@@ -1,15 +1,18 @@
-import { Moon, Sun, FileText, LogOut } from "lucide-react";
+import { Moon, Sun, FileText, LogOut, Coins } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
+import { useUserCoins } from "@/hooks/useCoins";
 
 export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: coins } = useUserCoins();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
@@ -29,12 +32,33 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
   }, [theme]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const fetchUserAndProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
-    });
+      
+      if (session?.user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        setProfile(data);
+      }
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    fetchUserAndProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user || null);
+      
+      if (session?.user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        setProfile(data);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -76,6 +100,14 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          <div 
+            onClick={() => navigate("/profile")}
+            className="glass-effect px-3 py-1.5 rounded-full flex items-center gap-2 cursor-pointer hover:bg-secondary/50 transition-colors"
+          >
+            <Coins className="w-4 h-4 text-orange" />
+            <span className="text-sm font-bold text-orange">{coins?.toLocaleString() || 0}</span>
+          </div>
+
           <button
             onClick={toggleTheme}
             className="glass-effect w-10 h-10 rounded-full flex items-center justify-center hover:rotate-[30deg] transition-transform duration-300"
@@ -97,19 +129,45 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
             <LogOut className="w-5 h-5" />
           </Button>
           
-          <div className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold">
-            <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
-          </div>
+          {profile?.avatar_url ? (
+            <div 
+              onClick={() => navigate("/profile")}
+              className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <img
+                src={profile.avatar_url}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div 
+              onClick={() => navigate("/profile")}
+              className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
+            </div>
+          )}
         </div>
       </div>
 
       {showUserInfo && (
         <div className="flex items-center mt-4">
-          <div className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold mr-3">
-            <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
-          </div>
+          {profile?.avatar_url ? (
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange mr-3">
+              <img
+                src={profile.avatar_url}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold mr-3">
+              <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
+            </div>
+          )}
           <div>
-            <p className="font-medium">{user?.email?.split('@')[0] || "User"}</p>
+            <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || "User"}</p>
             <p className="text-xs text-muted-foreground">Premium Member</p>
           </div>
         </div>

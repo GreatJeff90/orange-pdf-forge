@@ -227,7 +227,16 @@ export default function Auth() {
             </Button>
           </form>
 
-          <div className="text-center">
+          <div className="text-center space-y-3">
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-sm text-muted-foreground hover:text-orange-500 transition-colors block w-full"
+              >
+                Forgot password?
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

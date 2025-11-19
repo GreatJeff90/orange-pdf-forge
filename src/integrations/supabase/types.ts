@@ -14,9 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      coin_packages: {
+        Row: {
+          coins: number
+          created_at: string
+          id: string
+          name: string
+          popular: boolean | null
+          price: number
+        }
+        Insert: {
+          coins: number
+          created_at?: string
+          id?: string
+          name: string
+          popular?: boolean | null
+          price: number
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          id?: string
+          name?: string
+          popular?: boolean | null
+          price?: number
+        }
+        Relationships: []
+      }
+      conversions: {
+        Row: {
+          completed_at: string | null
+          conversion_type: Database["public"]["Enums"]["conversion_type"]
+          cost: number
+          created_at: string
+          error_message: string | null
+          id: string
+          input_file_path: string
+          output_file_path: string | null
+          status: Database["public"]["Enums"]["conversion_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conversion_type: Database["public"]["Enums"]["conversion_type"]
+          cost?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_file_path: string
+          output_file_path?: string | null
+          status?: Database["public"]["Enums"]["conversion_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          conversion_type?: Database["public"]["Enums"]["conversion_type"]
+          cost?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_file_path?: string
+          output_file_path?: string | null
+          status?: Database["public"]["Enums"]["conversion_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      password_reset_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          coins: number
           created_at: string | null
           email: string
           full_name: string | null
@@ -25,6 +116,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          coins?: number
           created_at?: string | null
           email: string
           full_name?: string | null
@@ -33,6 +125,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          coins?: number
           created_at?: string | null
           email?: string
           full_name?: string | null
@@ -41,15 +134,76 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          conversion_id: string | null
+          created_at: string
+          description: string
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          conversion_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          conversion_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_conversion_id_fkey"
+            columns: ["conversion_id"]
+            isOneToOne: false
+            referencedRelation: "conversions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_coins: {
+        Args: { p_amount: number; p_description: string; p_user_id: string }
+        Returns: undefined
+      }
+      cleanup_old_reset_attempts: { Args: never; Returns: undefined }
+      deduct_coins: {
+        Args: {
+          p_amount: number
+          p_conversion_id?: string
+          p_description: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      conversion_status: "pending" | "processing" | "completed" | "failed"
+      conversion_type:
+        | "pdf_to_word"
+        | "pdf_to_excel"
+        | "word_to_pdf"
+        | "excel_to_pdf"
+        | "compress_pdf"
+        | "merge_pdf"
+        | "split_pdf"
+        | "pdf_to_jpg"
+        | "jpg_to_pdf"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -176,6 +330,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      conversion_status: ["pending", "processing", "completed", "failed"],
+      conversion_type: [
+        "pdf_to_word",
+        "pdf_to_excel",
+        "word_to_pdf",
+        "excel_to_pdf",
+        "compress_pdf",
+        "merge_pdf",
+        "split_pdf",
+        "pdf_to_jpg",
+        "jpg_to_pdf",
+      ],
+    },
   },
 } as const
