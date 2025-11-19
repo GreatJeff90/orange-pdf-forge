@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
+import { BannerAd } from "@/components/BannerAd";
 import { FileText, FilePlus, Merge, Download, Clock, Loader2 } from "lucide-react";
 import { useConversions, useConversionDownload } from "@/hooks/useConversions";
 import { useToast } from "@/hooks/use-toast";
@@ -151,6 +152,7 @@ const History = () => {
           </div>
         )}
       </main>
+      <BannerAd className="mx-4 mb-4" />
       <BottomNav />
     </div>
   );
