@@ -150,8 +150,8 @@ export const CoinPurchaseModal = ({ isOpen, onClose }: CoinPurchaseModalProps) =
                       </span>
                     )}
                     {pkg.name === 'Ultimate' && (
-                      <span className="text-xs bg-purple-500/20 text-purple-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Founder
+                      <span className="text-xs bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shadow-lg shadow-amber-500/50">
+                        <Sparkles className="w-3 h-3" /> Founder Badge
                       </span>
                     )}
                   </div>
@@ -175,6 +175,10 @@ export const CoinPurchaseModal = ({ isOpen, onClose }: CoinPurchaseModalProps) =
                     pkg.popular
                       ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                       : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  } ${
+                    pkg.name === 'Ultimate'
+                      ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shadow-lg shadow-amber-500/30"
+                      : ""
                   } py-6 text-base font-medium`}
                 >
                   {purchasing ? (
@@ -186,6 +190,22 @@ export const CoinPurchaseModal = ({ isOpen, onClose }: CoinPurchaseModalProps) =
                     </>
                   )}
                 </Button>
+                
+                {pkg.name === 'Ultimate' && (
+                  <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-amber-500 mb-1">
+                          Exclusive Founder Badge
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Get a special Founder badge displayed on your profile to show you're an early supporter of PDF-Orange!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
