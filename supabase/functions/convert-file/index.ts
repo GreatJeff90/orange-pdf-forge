@@ -78,16 +78,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { 
-        global: { 
-          headers: { 
-            Authorization: authHeader 
-          } 
+      {
+        global: {
+          headers: { Authorization: authHeader },
         },
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false
-        }
       }
     );
 
