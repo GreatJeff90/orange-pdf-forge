@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
+import { BannerAd } from "@/components/BannerAd";
 import { 
   User, 
   Mail, 
@@ -259,6 +260,7 @@ const Profile = () => {
         </Button>
       </main>
 
+      <BannerAd className="mx-4 mb-4" />
       <BottomNav />
       <CoinPurchaseModal isOpen={showCoinModal} onClose={() => setShowCoinModal(false)} />
       <ProfileEditModal 

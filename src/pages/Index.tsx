@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
+import { BannerAd } from "@/components/BannerAd";
 import { ConversionModal } from "@/components/ConversionModal";
 import { 
   FileText, 
@@ -230,6 +231,8 @@ const Index = () => {
           acceptedTypes={option.acceptedTypes}
         />
       ))}
+
+      <BannerAd className="mt-6" />
     </div>
   );
 };
