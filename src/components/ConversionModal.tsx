@@ -11,7 +11,6 @@ interface ConversionModalProps {
   onClose: () => void;
   title: string;
   description: string;
-  cost: number;
   icon: React.ReactNode;
   iconBg: string;
   showSplitOptions?: boolean;
@@ -25,7 +24,6 @@ export const ConversionModal = ({
   onClose,
   title,
   description,
-  cost,
   icon,
   iconBg,
   showSplitOptions = false,
@@ -79,7 +77,6 @@ export const ConversionModal = ({
           body: {
             conversionType,
             inputFilePath: filePath,
-            cost,
             options: {
               compressionLevel,
               splitOption,
@@ -90,20 +87,11 @@ export const ConversionModal = ({
         if (error) {
           console.error("Conversion error:", error);
           
-          // Check if it's an insufficient coins error
-          if (error.message?.includes("Insufficient coins")) {
-            toast({
-              title: "Insufficient coins",
-              description: "You don't have enough coins for this conversion. Please purchase more coins.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Conversion failed",
-              description: error.message || "Failed to start conversion. Please try again.",
-              variant: "destructive",
-            });
-          }
+          toast({
+            title: "Conversion failed",
+            description: error.message || "Failed to start conversion. Please try again.",
+            variant: "destructive",
+          });
           return;
         } else {
           console.log("Conversion started:", data);
@@ -166,7 +154,7 @@ export const ConversionModal = ({
             </div>
             <div>
               <p className="font-medium">{description}</p>
-              <p className="text-xs text-muted-foreground">Cost: {cost} coins</p>
+              <p className="text-xs text-green-500 font-semibold">100% FREE - No coins required</p>
             </div>
           </div>
         </div>
@@ -246,7 +234,7 @@ export const ConversionModal = ({
         >
           {uploading
             ? `Uploading... ${progress}%`
-            : `${title.split(" ").slice(0, 2).join(" ")} (${cost} coins)`}
+            : `${title.split(" ").slice(0, 2).join(" ")} - FREE`}
         </Button>
       </DialogContent>
     </Dialog>
