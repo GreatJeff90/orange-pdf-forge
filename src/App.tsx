@@ -9,6 +9,8 @@ import Earn from "./pages/Earn";
 import History from "./pages/History";
 import Onboarding from "./pages/Onboarding";
 import Auth from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -23,6 +25,8 @@ const App = () => (
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/earn" element={<ProtectedRoute><Earn /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
