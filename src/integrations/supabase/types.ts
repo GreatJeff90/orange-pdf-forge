@@ -108,6 +108,7 @@ export type Database = {
         Row: {
           ad_free_until: string | null
           avatar_url: string | null
+          badge: string | null
           coins: number
           created_at: string | null
           email: string
@@ -118,6 +119,7 @@ export type Database = {
         Insert: {
           ad_free_until?: string | null
           avatar_url?: string | null
+          badge?: string | null
           coins?: number
           created_at?: string | null
           email: string
@@ -128,6 +130,7 @@ export type Database = {
         Update: {
           ad_free_until?: string | null
           avatar_url?: string | null
+          badge?: string | null
           coins?: number
           created_at?: string | null
           email?: string

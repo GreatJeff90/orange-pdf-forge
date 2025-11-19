@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { BannerAd } from "@/components/BannerAd";
+import { UserBadge } from "@/components/UserBadge";
 import { 
   User, 
   Mail, 
@@ -98,10 +99,9 @@ const Profile = () => {
                 <span className="truncate">{userProfile?.email || "user@email.com"}</span>
               </p>
               <div className="flex items-center gap-2 mt-1.5">
-                <div className="px-2.5 py-0.5 rounded-full gradient-orange text-white text-xs font-medium flex items-center gap-1">
-                  <Star className="w-3 h-3" />
-                  Premium
-                </div>
+                {userProfile?.badge && (
+                  <UserBadge badge={userProfile.badge} size="md" />
+                )}
               </div>
             </div>
           </div>

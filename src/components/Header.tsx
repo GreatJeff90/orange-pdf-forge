@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
 import { useUserCoins } from "@/hooks/useCoins";
+import { UserBadge } from "./UserBadge";
 
 export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -105,7 +106,7 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
             className="glass-effect px-3 py-1.5 rounded-full flex items-center gap-2 cursor-pointer hover:bg-secondary/50 transition-colors"
           >
             <Coins className="w-4 h-4 text-orange" />
-            <span className="text-sm font-bold text-orange">{coins?.toLocaleString() || 0}</span>
+            <span className="text-sm font-bold text-orange">{coins?.coins?.toLocaleString() || 0}</span>
           </div>
 
           <button
@@ -166,9 +167,13 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
               <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
             </div>
           )}
-          <div>
+          <div className="flex-1">
             <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || "User"}</p>
-            <p className="text-xs text-muted-foreground">Premium Member</p>
+            {profile?.badge && (
+              <div className="mt-1">
+                <UserBadge badge={profile.badge} size="sm" />
+              </div>
+            )}
           </div>
         </div>
       )}
