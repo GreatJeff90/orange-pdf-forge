@@ -13,20 +13,35 @@ import {
   TrendingUp,
   CheckCircle2,
   Clock,
-  XCircle
+  XCircle,
+  Loader2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useConversions } from "@/hooks/useConversions";
-import { formatDistanceToNow } from "date-fns";
+import { useUserCoins } from "@/hooks/useCoins";
+import { formatDistanceToNow, isToday } from "date-fns";
 
 type ConversionType = "pdf-to-word" | "pdf-to-image" | "image-to-pdf" | "pdf-merge" | "pdf-split" | "pdf-compress" | null;
 
 const Index = () => {
   const [activeModal, setActiveModal] = useState<ConversionType>(null);
   const { data: conversions, isLoading: conversionsLoading } = useConversions();
+  const { data: userCoins, isLoading: coinsLoading } = useUserCoins();
 
   // Get latest 5 conversions
   const recentConversions = conversions?.slice(0, 5) || [];
+
+  // Calculate today's conversions
+  const todaysConversions = useMemo(() => {
+    if (!conversions) return 0;
+    return conversions.filter(conv => isToday(new Date(conv.created_at))).length;
+  }, [conversions]);
+
+  // Calculate total completed conversions
+  const totalConversions = useMemo(() => {
+    if (!conversions) return 0;
+    return conversions.filter(conv => conv.status === 'completed').length;
+  }, [conversions]);
 
   const getConversionIcon = (type: string) => {
     const typeMap: Record<string, { icon: JSX.Element; gradient: string }> = {
@@ -179,9 +194,16 @@ const Index = () => {
           <div className="flex justify-between items-start mb-4 relative z-10">
             <div>
               <p className="text-muted-foreground text-sm">Available Coins</p>
-              <h2 className="text-3xl font-bold">
-                5,240 <span className="text-lg text-orange">coins</span>
-              </h2>
+              {coinsLoading ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Loader2 className="w-6 h-6 animate-spin text-orange" />
+                  <span className="text-lg text-muted-foreground">Loading...</span>
+                </div>
+              ) : (
+                <h2 className="text-3xl font-bold">
+                  {userCoins?.coins?.toLocaleString() || 0} <span className="text-lg text-orange">coins</span>
+                </h2>
+              )}
             </div>
             <div className="gradient-orange p-2 rounded-full">
               <Coins className="w-5 h-5 text-white" />
@@ -190,11 +212,19 @@ const Index = () => {
           <div className="flex justify-between text-sm relative z-10">
             <div>
               <p className="text-muted-foreground">Conversions Today</p>
-              <p className="font-medium">3 files</p>
+              {conversionsLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              ) : (
+                <p className="font-medium">{todaysConversions} {todaysConversions === 1 ? 'file' : 'files'}</p>
+              )}
             </div>
             <div>
-              <p className="text-muted-foreground">Conversion Rate</p>
-              <p className="font-medium">50 coins/file</p>
+              <p className="text-muted-foreground">Total Conversions</p>
+              {conversionsLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              ) : (
+                <p className="font-medium">{totalConversions} {totalConversions === 1 ? 'file' : 'files'}</p>
+              )}
             </div>
           </div>
         </div>
