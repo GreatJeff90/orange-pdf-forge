@@ -22,28 +22,31 @@ import { Button } from "@/components/ui/button";
 import { useUserCoins, useTransactions } from "@/hooks/useCoins";
 import { useConversions } from "@/hooks/useConversions";
 import { CoinPurchaseModal } from "@/components/CoinPurchaseModal";
+import { ProfileEditModal } from "@/components/ProfileEditModal";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const [showCoinModal, setShowCoinModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const { data: coins, isLoading: coinsLoading } = useUserCoins();
   const { data: conversions } = useConversions();
   const { data: transactions } = useTransactions();
 
+  const fetchProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+      setUserProfile(data);
+    }
+  };
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        setUserProfile(data);
-      }
-    };
     fetchProfile();
   }, []);
 
@@ -69,9 +72,19 @@ const Profile = () => {
           <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full opacity-10" style={{ background: "hsl(var(--orange))" }} />
           
           <div className="relative z-10 flex items-center mb-4">
-            <div className="w-20 h-20 rounded-full gradient-orange flex items-center justify-center text-white font-bold text-2xl mr-4 neon-glow">
-              {initials}
-            </div>
+            {userProfile?.avatar_url ? (
+              <div className="w-20 h-20 rounded-full overflow-hidden mr-4 neon-glow border-2 border-orange">
+                <img
+                  src={userProfile.avatar_url}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full gradient-orange flex items-center justify-center text-white font-bold text-2xl mr-4 neon-glow">
+                {initials}
+              </div>
+            )}
             <div className="flex-1">
               <h2 className="text-2xl font-bold">{userProfile?.full_name || "User"}</h2>
               <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -174,7 +187,10 @@ const Profile = () => {
         <div className="glass-effect rounded-2xl p-4">
           <h3 className="font-semibold mb-3">Settings</h3>
           <div className="space-y-2">
-            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
+            <button 
+              onClick={() => setShowEditModal(true)}
+              className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <User className="w-5 h-5 text-orange" />
                 <span className="text-sm">Edit Profile</span>
@@ -245,6 +261,15 @@ const Profile = () => {
 
       <BottomNav />
       <CoinPurchaseModal isOpen={showCoinModal} onClose={() => setShowCoinModal(false)} />
+      <ProfileEditModal 
+        isOpen={showEditModal} 
+        onClose={() => setShowEditModal(false)}
+        currentProfile={{
+          full_name: userProfile?.full_name || null,
+          avatar_url: userProfile?.avatar_url || null,
+        }}
+        onUpdate={fetchProfile}
+      />
     </div>
   );
 };
