@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { BannerAd } from "@/components/BannerAd";
 import { UserBadge } from "@/components/UserBadge";
+import { AchievementCard } from "@/components/AchievementCard";
 import { 
   User, 
   Mail, 
@@ -20,7 +21,13 @@ import {
   Plus,
   Loader2,
   Calendar,
-  Check
+  Check,
+  Zap,
+  Target,
+  Trophy,
+  Rocket,
+  Crown,
+  Flame
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserCoins, useTransactions } from "@/hooks/useCoins";
@@ -67,6 +74,78 @@ const Profile = () => {
     .toUpperCase() || "U";
 
   const adFreeStatus = getAdFreeStatus(coins?.adFreeUntil || null);
+
+  // Achievement definitions
+  const achievements = [
+    {
+      icon: Zap,
+      title: "First Steps",
+      description: "Complete your first conversion",
+      current: conversions?.length || 0,
+      target: 1,
+      gradient: "bg-gradient-to-br from-blue-500 to-blue-700",
+    },
+    {
+      icon: Target,
+      title: "Getting Started",
+      description: "Complete 10 conversions",
+      current: conversions?.length || 0,
+      target: 10,
+      gradient: "bg-gradient-to-br from-green-500 to-green-700",
+    },
+    {
+      icon: TrendingUp,
+      title: "Rising Star",
+      description: "Complete 50 conversions",
+      current: conversions?.length || 0,
+      target: 50,
+      gradient: "bg-gradient-to-br from-purple-500 to-purple-700",
+    },
+    {
+      icon: Trophy,
+      title: "Century Club",
+      description: "Complete 100 conversions",
+      current: conversions?.length || 0,
+      target: 100,
+      gradient: "bg-gradient-to-br from-yellow-500 to-yellow-700",
+    },
+    {
+      icon: Rocket,
+      title: "Power User",
+      description: "Complete 500 conversions",
+      current: conversions?.length || 0,
+      target: 500,
+      gradient: "bg-gradient-to-br from-red-500 to-red-700",
+    },
+    {
+      icon: Crown,
+      title: "Legend",
+      description: "Complete 1000 conversions",
+      current: conversions?.length || 0,
+      target: 1000,
+      gradient: "bg-gradient-to-br from-amber-500 to-yellow-600",
+    },
+    {
+      icon: Coins,
+      title: "Coin Collector",
+      description: "Earn 10,000 coins",
+      current: coins?.coins || 0,
+      target: 10000,
+      gradient: "bg-gradient-to-br from-orange-500 to-orange-700",
+    },
+    {
+      icon: Flame,
+      title: "Big Spender",
+      description: "Spend 5,000 coins on purchases",
+      current: Math.max(0, 100 - (coins?.coins || 0)), // Simulated spending
+      target: 5000,
+      gradient: "bg-gradient-to-br from-pink-500 to-rose-700",
+    },
+  ];
+
+  const unlockedAchievements = achievements.filter(
+    (achievement) => achievement.current >= achievement.target
+  ).length;
 
   return (
     <div className="max-w-md mx-auto min-h-screen pb-24">
@@ -189,26 +268,28 @@ const Profile = () => {
 
         {/* Achievements */}
         <div className="glass-effect rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold flex items-center gap-2">
               <Award className="w-5 h-5 text-orange" />
               Achievements
             </h3>
-            <span className="text-xs text-orange">3/12</span>
+            <span className="text-xs bg-orange/20 text-orange px-3 py-1 rounded-full font-semibold">
+              {unlockedAchievements}/{achievements.length}
+            </span>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl gradient-orange flex items-center justify-center neon-glow">
-              <TrendingUp className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl glass-effect flex items-center justify-center border-2 border-dashed border-border">
-              <Award className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl glass-effect flex items-center justify-center border-2 border-dashed border-border">
-              <Star className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl glass-effect flex items-center justify-center border-2 border-dashed border-border">
-              <Coins className="w-8 h-8 text-muted-foreground" />
-            </div>
+          <div className="grid grid-cols-1 gap-3">
+            {achievements.map((achievement, index) => (
+              <AchievementCard
+                key={index}
+                icon={achievement.icon}
+                title={achievement.title}
+                description={achievement.description}
+                current={achievement.current}
+                target={achievement.target}
+                unlocked={achievement.current >= achievement.target}
+                gradient={achievement.gradient}
+              />
+            ))}
           </div>
         </div>
 
