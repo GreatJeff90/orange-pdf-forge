@@ -50,6 +50,17 @@ export const ConversionModal = ({
     }
 
     try {
+      // Verify user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to convert files",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Upload files first
       const folderName = title.toLowerCase().replace(/\s+/g, "-");
       const uploadedPaths = await uploadFiles(selectedFiles, {
@@ -62,6 +73,8 @@ export const ConversionModal = ({
       const conversionType = getConversionType(title);
       
       for (const filePath of uploadedPaths) {
+        console.log("Invoking convert-file with:", { conversionType, filePath });
+        
         const { data, error } = await supabase.functions.invoke("convert-file", {
           body: {
             conversionType,
@@ -87,7 +100,7 @@ export const ConversionModal = ({
           } else {
             toast({
               title: "Conversion failed",
-              description: error.message || "Failed to start conversion",
+              description: error.message || "Failed to start conversion. Please try again.",
               variant: "destructive",
             });
           }
@@ -109,6 +122,11 @@ export const ConversionModal = ({
       setTimeout(() => onClose(), 1500);
     } catch (error) {
       console.error("Conversion error:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
