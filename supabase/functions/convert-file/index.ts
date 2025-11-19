@@ -85,7 +85,9 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError) {
       console.error("Auth error:", userError);
