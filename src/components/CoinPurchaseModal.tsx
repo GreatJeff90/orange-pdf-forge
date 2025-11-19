@@ -1,10 +1,11 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useCoinPackages, useAddCoins } from "@/hooks/useCoins";
+import { useCoinPackages, useAddCoins, useUserCoins } from "@/hooks/useCoins";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Check, Loader2, Sparkles } from "lucide-react";
+import { Coins, Check, Loader2, Sparkles, Shield, Calendar } from "lucide-react";
 import { useState } from "react";
 import confetti from "canvas-confetti";
+import { getAdFreeStatus } from "@/lib/adFreeUtils";
 
 interface CoinPurchaseModalProps {
   isOpen: boolean;
@@ -13,9 +14,12 @@ interface CoinPurchaseModalProps {
 
 export const CoinPurchaseModal = ({ isOpen, onClose }: CoinPurchaseModalProps) => {
   const { data: packages, isLoading } = useCoinPackages();
+  const { data: userCoins } = useUserCoins();
   const { addCoins } = useAddCoins();
   const { toast } = useToast();
   const [purchasing, setPurchasing] = useState(false);
+
+  const adFreeStatus = getAdFreeStatus(userCoins?.adFreeUntil || null);
 
   const getAdFreeDuration = (coins: number): string => {
     const months = Math.floor(coins / 1000);
@@ -80,6 +84,41 @@ export const CoinPurchaseModal = ({ isOpen, onClose }: CoinPurchaseModalProps) =
               You're only removing ads.
             </p>
           </div>
+
+          {/* Current Ad-Free Status */}
+          {adFreeStatus.isAdFree ? (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mt-3">
+              <div className="flex items-start gap-2">
+                <Shield className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-500 mb-1">
+                    🎉 You're Ad-Free!
+                  </p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Expires {adFreeStatus.timeRemaining}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {adFreeStatus.formattedDate}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-muted/50 border border-border rounded-lg p-3 mt-3">
+              <div className="flex items-start gap-2">
+                <Sparkles className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    No active ad-free time
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Purchase coins below to enjoy an ad-free experience
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         {isLoading ? (

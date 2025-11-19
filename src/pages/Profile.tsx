@@ -17,7 +17,9 @@ import {
   TrendingUp,
   Coins,
   Plus,
-  Loader2
+  Loader2,
+  Calendar,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserCoins, useTransactions } from "@/hooks/useCoins";
@@ -26,6 +28,7 @@ import { CoinPurchaseModal } from "@/components/CoinPurchaseModal";
 import { ProfileEditModal } from "@/components/ProfileEditModal";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getAdFreeStatus } from "@/lib/adFreeUtils";
 
 const Profile = () => {
   const [showCoinModal, setShowCoinModal] = useState(false);
@@ -61,6 +64,8 @@ const Profile = () => {
     .map((n: string) => n[0])
     .join("")
     .toUpperCase() || "U";
+
+  const adFreeStatus = getAdFreeStatus(coins?.adFreeUntil || null);
 
   return (
     <div className="max-w-md mx-auto min-h-screen pb-24">
@@ -108,7 +113,7 @@ const Profile = () => {
                 <Loader2 className="w-5 h-5 animate-spin mx-auto text-orange" />
               ) : (
                 <div className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                  {coins?.toLocaleString() || 0}
+                  {coins?.coins?.toLocaleString() || 0}
                 </div>
               )}
               <div className="text-xs text-muted-foreground">Coins</div>
@@ -126,6 +131,29 @@ const Profile = () => {
               <div className="text-xs text-muted-foreground">Transactions</div>
             </div>
           </div>
+
+          {/* Ad-Free Status */}
+          {adFreeStatus.isAdFree ? (
+            <div className="mt-4 relative z-10 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Check className="w-4 h-4 text-green-500" />
+                <p className="text-sm font-semibold text-green-500">Ad-Free Active</p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                <span>Expires {adFreeStatus.timeRemaining}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 ml-4.5">
+                {adFreeStatus.formattedDate}
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 relative z-10 bg-muted/50 border border-border rounded-lg p-3">
+              <p className="text-xs text-muted-foreground text-center">
+                Purchase coins to remove ads
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Coin Balance & Purchase */}
@@ -150,7 +178,7 @@ const Profile = () => {
               {coinsLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin text-orange mt-1" />
               ) : (
-                <p className="text-3xl font-bold text-orange">{coins?.toLocaleString() || 0}</p>
+                <p className="text-3xl font-bold text-orange">{coins?.coins?.toLocaleString() || 0}</p>
               )}
             </div>
             <div className="w-16 h-16 rounded-full gradient-orange flex items-center justify-center neon-glow">
