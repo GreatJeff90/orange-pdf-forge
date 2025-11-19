@@ -24,7 +24,6 @@ const Index = () => {
       id: "pdf-to-word" as ConversionType,
       title: "PDF to Word",
       description: "Convert to editable DOCX",
-      cost: 50,
       icon: <FileText className="w-7 h-7 text-white" />,
       bgGradient: "bg-gradient-to-br from-blue-500 to-blue-700",
       modalTitle: "PDF to Word Conversion",
@@ -35,7 +34,6 @@ const Index = () => {
       id: "pdf-to-image" as ConversionType,
       title: "PDF to Images",
       description: "Extract images from PDF",
-      cost: 30,
       icon: <Image className="w-7 h-7 text-white" />,
       bgGradient: "bg-gradient-to-br from-green-500 to-green-700",
       modalTitle: "PDF to Images",
@@ -46,7 +44,6 @@ const Index = () => {
       id: "image-to-pdf" as ConversionType,
       title: "Images to PDF",
       description: "Convert images to PDF",
-      cost: 40,
       icon: <FilePlus className="w-7 h-7 text-white" />,
       bgGradient: "bg-gradient-to-br from-purple-500 to-purple-700",
       modalTitle: "Images to PDF",
@@ -58,7 +55,6 @@ const Index = () => {
       id: "pdf-merge" as ConversionType,
       title: "Merge PDFs",
       description: "Combine multiple PDFs",
-      cost: 60,
       icon: <Merge className="w-7 h-7 text-white" />,
       bgGradient: "bg-gradient-to-br from-red-500 to-red-700",
       modalTitle: "Merge PDF Files",
@@ -70,7 +66,6 @@ const Index = () => {
       id: "pdf-split" as ConversionType,
       title: "Split PDF",
       description: "Split PDF into files",
-      cost: 45,
       icon: <ScissorsLineDashed className="w-7 h-7 text-white" />,
       bgGradient: "bg-gradient-to-br from-yellow-500 to-yellow-700",
       modalTitle: "Split PDF",
@@ -82,7 +77,6 @@ const Index = () => {
       id: "pdf-compress" as ConversionType,
       title: "Compress PDF",
       description: "Reduce PDF file size",
-      cost: 35,
       icon: <FileArchive className="w-7 h-7 text-white" />,
       bgGradient: "bg-gradient-to-br from-indigo-500 to-indigo-700",
       modalTitle: "Compress PDF",
@@ -173,9 +167,8 @@ const Index = () => {
                 </div>
                 <h4 className="font-medium text-sm">{option.title}</h4>
                 <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
-                <div className="mt-3 text-xs text-orange flex items-center justify-center gap-1">
-                  <Coins className="w-3 h-3" />
-                  <span>{option.cost} coins</span>
+                <div className="mt-3 text-xs text-green-500 font-semibold">
+                  100% FREE
                 </div>
               </div>
             ))}
@@ -222,7 +215,6 @@ const Index = () => {
           onClose={() => setActiveModal(null)}
           title={option.modalTitle}
           description={option.modalDescription}
-          cost={option.cost}
           icon={option.icon}
           iconBg={option.bgGradient}
           showSplitOptions={option.showSplitOptions}

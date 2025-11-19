@@ -24,10 +24,6 @@ const ConversionRequestSchema = z.object({
     .min(1, "File path cannot be empty")
     .max(500, "File path too long")
     .regex(/^[a-zA-Z0-9/_.-]+$/, "Invalid characters in file path"),
-  cost: z.number()
-    .int("Cost must be an integer")
-    .min(0, "Cost cannot be negative")
-    .max(1000, "Cost exceeds maximum allowed"),
   options: z.object({
     compressionLevel: z.number()
       .int()
@@ -47,7 +43,6 @@ const ConversionRequestSchema = z.object({
 interface ConversionRequest {
   conversionType: string;
   inputFilePath: string;
-  cost: number;
   options?: {
     compressionLevel?: number;
     splitOption?: string;
@@ -131,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { conversionType, inputFilePath, cost, options }: ConversionRequest = validationResult.data;
+    const { conversionType, inputFilePath, options }: ConversionRequest = validationResult.data;
     
     // Additional security: Verify the file path belongs to the user's directory
     if (!inputFilePath.startsWith(`${user.id}/`)) {
@@ -168,7 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
         user_id: user.id,
         conversion_type: conversionType,
         input_file_path: inputFilePath,
-        cost: cost,
+        cost: 0,
         status: "processing",
       })
       .select()
