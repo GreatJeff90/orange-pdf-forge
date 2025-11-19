@@ -5,6 +5,7 @@ import { FileText, FilePlus, Merge, Download, Clock, Loader2 } from "lucide-reac
 import { useConversions, useConversionDownload } from "@/hooks/useConversions";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const History = () => {
   const { data: conversions, isLoading } = useConversions();
@@ -111,40 +112,62 @@ const History = () => {
           <div className="space-y-4">
             {conversions.map((conversion) => {
               const { icon, gradient } = getIconAndGradient(conversion.conversion_type);
+              const isProcessing = conversion.status === 'pending' || conversion.status === 'processing';
+              
               return (
                 <div key={conversion.id} className="glass-effect rounded-2xl p-4">
-                  <div className="flex items-center mb-3">
-                    <div className={`${gradient} w-10 h-10 rounded-xl flex items-center justify-center mr-3`}>
-                      {icon}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{getDisplayTitle(conversion.conversion_type)}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(conversion.created_at)}</p>
-                    </div>
-                    {conversion.status === "completed" && conversion.output_file_path && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownload(conversion)}
-                        className="w-8 h-8 glass-effect rounded-lg hover:bg-secondary/50 transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className={`font-medium ${
-                      conversion.status === "completed" ? "text-green-500" : 
-                      conversion.status === "failed" ? "text-red-500" : 
-                      "text-yellow-500"
-                    }`}>
-                      {conversion.status.charAt(0).toUpperCase() + conversion.status.slice(1)}
-                      {conversion.status === "processing" && <Loader2 className="w-3 h-3 inline ml-1 animate-spin" />}
-                    </span>
-                    <span className="text-muted-foreground">-{conversion.cost} coins</span>
-                  </div>
-                  {conversion.error_message && (
-                    <p className="text-xs text-red-500 mt-2">{conversion.error_message}</p>
+                  {isProcessing ? (
+                    <>
+                      <div className="flex items-center mb-3">
+                        <Skeleton className="w-10 h-10 rounded-xl mr-3" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-5 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-yellow-500" />
+                          <span className="text-yellow-500 font-medium">Processing...</span>
+                        </div>
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center mb-3">
+                        <div className={`${gradient} w-10 h-10 rounded-xl flex items-center justify-center mr-3`}>
+                          {icon}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{getDisplayTitle(conversion.conversion_type)}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(conversion.created_at)}</p>
+                        </div>
+                        {conversion.status === "completed" && conversion.output_file_path && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownload(conversion)}
+                            className="w-8 h-8 glass-effect rounded-lg hover:bg-secondary/50 transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className={`font-medium ${
+                          conversion.status === "completed" ? "text-green-500" : 
+                          conversion.status === "failed" ? "text-red-500" : 
+                          "text-yellow-500"
+                        }`}>
+                          {conversion.status.charAt(0).toUpperCase() + conversion.status.slice(1)}
+                        </span>
+                        <span className="text-muted-foreground">-{conversion.cost} coins</span>
+                      </div>
+                      {conversion.error_message && (
+                        <p className="text-xs text-red-500 mt-2">{conversion.error_message}</p>
+                      )}
+                    </>
                   )}
                 </div>
               );
