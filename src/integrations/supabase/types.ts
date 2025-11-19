@@ -83,6 +83,27 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -160,6 +181,7 @@ export type Database = {
         Args: { p_amount: number; p_description: string; p_user_id: string }
         Returns: undefined
       }
+      cleanup_old_reset_attempts: { Args: never; Returns: undefined }
       deduct_coins: {
         Args: {
           p_amount: number
