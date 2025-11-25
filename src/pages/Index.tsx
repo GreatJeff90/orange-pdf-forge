@@ -9,39 +9,23 @@ import {
   Merge, 
   ScissorsLineDashed, 
   FileArchive,
-  Coins,
-  TrendingUp,
   CheckCircle2,
   Clock,
   XCircle,
   Loader2
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useConversions } from "@/hooks/useConversions";
-import { useUserCoins } from "@/hooks/useCoins";
-import { formatDistanceToNow, isToday } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 type ConversionType = "pdf-to-word" | "pdf-to-image" | "image-to-pdf" | "pdf-merge" | "pdf-split" | "pdf-compress" | null;
 
 const Index = () => {
   const [activeModal, setActiveModal] = useState<ConversionType>(null);
   const { data: conversions, isLoading: conversionsLoading } = useConversions();
-  const { data: userCoins, isLoading: coinsLoading } = useUserCoins();
 
   // Get latest 5 conversions
   const recentConversions = conversions?.slice(0, 5) || [];
-
-  // Calculate today's conversions
-  const todaysConversions = useMemo(() => {
-    if (!conversions) return 0;
-    return conversions.filter(conv => isToday(new Date(conv.created_at))).length;
-  }, [conversions]);
-
-  // Calculate total completed conversions
-  const totalConversions = useMemo(() => {
-    if (!conversions) return 0;
-    return conversions.filter(conv => conv.status === 'completed').length;
-  }, [conversions]);
 
   const getConversionIcon = (type: string) => {
     const typeMap: Record<string, { icon: JSX.Element; gradient: string }> = {
@@ -183,51 +167,9 @@ const Index = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen pb-24">
-      <Header showUserInfo />
+      <Header />
 
       <main className="p-4">
-        {/* Balance Card */}
-        <div className="glass-effect rounded-2xl p-6 mb-6 relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-20 h-20 rounded-full opacity-20" style={{ background: "hsl(var(--orange))" }} />
-          <div className="absolute -bottom-10 -left-10 w-24 h-24 rounded-full opacity-10" style={{ background: "hsl(var(--orange))" }} />
-          
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div>
-              <p className="text-muted-foreground text-sm">Available Coins</p>
-              {coinsLoading ? (
-                <div className="flex items-center gap-2 mt-1">
-                  <Loader2 className="w-6 h-6 animate-spin text-orange" />
-                  <span className="text-lg text-muted-foreground">Loading...</span>
-                </div>
-              ) : (
-                <h2 className="text-3xl font-bold">
-                  {userCoins?.coins?.toLocaleString() || 0} <span className="text-lg text-orange">coins</span>
-                </h2>
-              )}
-            </div>
-            <div className="gradient-orange p-2 rounded-full">
-              <Coins className="w-5 h-5 text-white" />
-            </div>
-          </div>
-          <div className="flex justify-between text-sm relative z-10">
-            <div>
-              <p className="text-muted-foreground">Conversions Today</p>
-              {conversionsLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              ) : (
-                <p className="font-medium">{todaysConversions} {todaysConversions === 1 ? 'file' : 'files'}</p>
-              )}
-            </div>
-            <div>
-              <p className="text-muted-foreground">Total Conversions</p>
-              {conversionsLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              ) : (
-                <p className="font-medium">{totalConversions} {totalConversions === 1 ? 'file' : 'files'}</p>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* PDF Conversion Options */}
         <div className="glass-effect rounded-2xl p-4 mb-6">

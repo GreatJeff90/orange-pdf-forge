@@ -37,8 +37,10 @@ import { ProfileEditModal } from "@/components/ProfileEditModal";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getAdFreeStatus } from "@/lib/adFreeUtils";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [showCoinModal, setShowCoinModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -332,7 +334,10 @@ const Profile = () => {
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
 
-            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
+            <button
+              onClick={() => navigate("/settings")}
+              className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <Palette className="w-5 h-5 text-orange" />
                 <span className="text-sm">Theme</span>

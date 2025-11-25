@@ -1,88 +1,33 @@
-import { Moon, Sun, Bell, Settings } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
-import { useUserCoins } from "@/hooks/useCoins";
-import { UserBadge } from "./UserBadge";
 import logo from "@/assets/logo.png";
+import { UserAvatar } from "./UserAvatar";
 
-export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+export const Header = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { data: coins } = useUserCoins();
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "light") {
-      root.classList.add("light");
-    } else {
-      root.classList.remove("light");
-    }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const fetchUserAndProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      
-      if (session?.user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
-        setProfile(data);
-      }
-    };
-
-    fetchUserAndProfile();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user || null);
-      
-      if (session?.user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
-        setProfile(data);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
 
   return (
     <header className="glass-effect rounded-b-3xl p-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center">
-          <img src={logo} alt="PDF-Orange" className="w-10 h-10 rounded-xl mr-3" />
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-              PDF-Orange
-            </h1>
-            <p className="text-xs text-muted-foreground">Futuristic PDF Tools</p>
+      <div className="flex justify-between items-center w-full">
+        {/* Invisible placeholder for spacing */}
+        <div className="w-20" />
+
+        {/* Centered Logo */}
+        <div className="flex-1 flex justify-center">
+          <div className="flex items-center">
+            <img src={logo} alt="PDF-Orange" className="w-10 h-10 rounded-xl mr-3" />
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
+                PDF-Orange
+              </h1>
+              <p className="text-xs text-muted-foreground">Futuristic PDF Tools</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
+
+        {/* Right-aligned Icons */}
+        <div className="flex items-center space-x-4 w-20 justify-end">
           <Button
             variant="ghost"
             size="icon"
@@ -92,75 +37,9 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
           >
             <Bell className="w-5 h-5" />
           </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/settings")}
-            className="w-10 h-10 rounded-full glass-effect hover:bg-orange-500/20"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
-
-          <button
-            onClick={toggleTheme}
-            className="glass-effect w-10 h-10 rounded-full flex items-center justify-center hover:rotate-[30deg] transition-transform duration-300"
-          >
-            {theme === "dark" ? (
-              <Moon className="w-5 h-5" />
-            ) : (
-              <Sun className="w-5 h-5" />
-            )}
-          </button>
-          
-          {profile?.avatar_url ? (
-            <div 
-              onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <img
-                src={profile.avatar_url}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div 
-              onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
-            </div>
-          )}
+          <UserAvatar />
         </div>
       </div>
-
-      {showUserInfo && (
-        <div className="flex items-center mt-4">
-          {profile?.avatar_url ? (
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange mr-3">
-              <img
-                src={profile.avatar_url}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold mr-3">
-              <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
-            </div>
-          )}
-          <div className="flex-1">
-            <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || "User"}</p>
-            {profile?.badge && (
-              <div className="mt-1">
-                <UserBadge badge={profile.badge} size="sm" />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </header>
   );
 };
