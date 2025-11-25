@@ -1,4 +1,4 @@
-import { Moon, Sun, FileText, LogOut, Coins } from "lucide-react";
+import { Moon, Sun, LogOut, Coins } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
 import { useUserCoins } from "@/hooks/useCoins";
 import { UserBadge } from "./UserBadge";
+import logo from "@/assets/logo.png";
 
 export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -90,9 +91,7 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
     <header className="glass-effect rounded-b-3xl p-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-xl gradient-orange flex items-center justify-center mr-3">
-            <FileText className="w-6 h-6 text-white" />
-          </div>
+          <img src={logo} alt="PDF-Orange" className="w-10 h-10 rounded-xl mr-3" />
           <div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
               PDF-Orange
