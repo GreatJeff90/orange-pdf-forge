@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { z } from "zod";
+import logo from "@/assets/logo.png";
 
 const authSchema = z.object({
   email: z.string().trim().email({ message: "Invalid email address" }).max(255),
@@ -138,9 +139,9 @@ export default function Auth() {
       <div className="max-w-md mx-auto w-full min-h-screen flex flex-col p-6">
         {/* Header */}
         <div className="flex items-center justify-center mb-12 mt-8">
-          <FileText className="w-12 h-12 text-orange-500 mr-3" />
+          <img src={logo} alt="PDF-Orange" className="w-12 h-12 rounded-xl mr-3" />
           <div>
-            <h1 className="text-2xl font-bold gradient-text">PDF-Orange</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">PDF-Orange</h1>
             <p className="text-xs text-muted-foreground">Futuristic PDF Tools</p>
           </div>
         </div>
