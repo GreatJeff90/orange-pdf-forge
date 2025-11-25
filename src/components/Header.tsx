@@ -10,24 +10,19 @@ export const Header = () => {
   return (
     <header className="glass-effect rounded-b-3xl p-4">
       <div className="flex justify-between items-center w-full">
-        {/* Invisible placeholder for spacing */}
-        <div className="w-20" />
-
-        {/* Centered Logo */}
-        <div className="flex-1 flex justify-center">
-          <div className="flex items-center">
-            <img src={logo} alt="PDF-Orange" className="w-10 h-10 rounded-xl mr-3" />
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                PDF-Orange
-              </h1>
-              <p className="text-xs text-muted-foreground">Futuristic PDF Tools</p>
-            </div>
+        {/* Left-aligned Logo */}
+        <div className="flex items-center">
+          <img src={logo} alt="PDF-Orange" className="w-10 h-10 rounded-xl mr-3" />
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
+              PDF-Orange
+            </h1>
+            <p className="text-xs text-muted-foreground">Futuristic PDF Tools</p>
           </div>
         </div>
 
         {/* Right-aligned Icons */}
-        <div className="flex items-center space-x-4 w-20 justify-end">
+        <div className="flex items-center space-x-4">
           <Button
             variant="ghost"
             size="icon"

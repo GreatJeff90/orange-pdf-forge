@@ -1,52 +1,18 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
-import { BannerAd } from "@/components/BannerAd";
-import { UserBadge } from "@/components/UserBadge";
-import { AchievementCard } from "@/components/AchievementCard";
-import { 
-  User, 
-  Mail, 
-  Shield, 
-  Bell, 
-  Palette, 
-  Globe, 
-  HelpCircle, 
-  Star,
-  CreditCard,
-  LogOut,
-  ChevronRight,
-  Award,
-  TrendingUp,
-  Coins,
-  Plus,
-  Loader2,
-  Calendar,
-  Check,
-  Zap,
-  Target,
-  Trophy,
-  Rocket,
-  Crown,
-  Flame
-} from "lucide-react";
+import { Coins, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useUserCoins, useTransactions } from "@/hooks/useCoins";
-import { useConversions } from "@/hooks/useConversions";
-import { CoinPurchaseModal } from "@/components/CoinPurchaseModal";
-import { ProfileEditModal } from "@/components/ProfileEditModal";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdFreeStatus } from "@/lib/adFreeUtils";
+import { useUserCoins } from "@/hooks/useCoins";
+import { useConversions } from "@/hooks/useConversions";
 import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [showCoinModal, setShowCoinModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const { data: coins, isLoading: coinsLoading } = useUserCoins();
+  const { data: coins } = useUserCoins();
   const { data: conversions } = useConversions();
-  const { data: transactions } = useTransactions();
 
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -69,325 +35,112 @@ const Profile = () => {
     window.location.href = "/auth";
   };
 
-  const initials = userProfile?.full_name
-    ?.split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase() || "U";
-
-  const adFreeStatus = getAdFreeStatus(coins?.adFreeUntil || null);
-
-  // Achievement definitions
-  const achievements = [
-    {
-      icon: Zap,
-      title: "First Steps",
-      description: "Complete your first conversion",
-      current: conversions?.length || 0,
-      target: 1,
-      gradient: "bg-gradient-to-br from-blue-500 to-blue-700",
-    },
-    {
-      icon: Target,
-      title: "Getting Started",
-      description: "Complete 10 conversions",
-      current: conversions?.length || 0,
-      target: 10,
-      gradient: "bg-gradient-to-br from-green-500 to-green-700",
-    },
-    {
-      icon: TrendingUp,
-      title: "Rising Star",
-      description: "Complete 50 conversions",
-      current: conversions?.length || 0,
-      target: 50,
-      gradient: "bg-gradient-to-br from-purple-500 to-purple-700",
-    },
-    {
-      icon: Trophy,
-      title: "Century Club",
-      description: "Complete 100 conversions",
-      current: conversions?.length || 0,
-      target: 100,
-      gradient: "bg-gradient-to-br from-yellow-500 to-yellow-700",
-    },
-    {
-      icon: Rocket,
-      title: "Power User",
-      description: "Complete 500 conversions",
-      current: conversions?.length || 0,
-      target: 500,
-      gradient: "bg-gradient-to-br from-red-500 to-red-700",
-    },
-    {
-      icon: Crown,
-      title: "Legend",
-      description: "Complete 1000 conversions",
-      current: conversions?.length || 0,
-      target: 1000,
-      gradient: "bg-gradient-to-br from-amber-500 to-yellow-600",
-    },
-    {
-      icon: Coins,
-      title: "Coin Collector",
-      description: "Earn 10,000 coins",
-      current: coins?.coins || 0,
-      target: 10000,
-      gradient: "bg-gradient-to-br from-orange-500 to-orange-700",
-    },
-    {
-      icon: Flame,
-      title: "Big Spender",
-      description: "Spend 5,000 coins on purchases",
-      current: Math.max(0, 100 - (coins?.coins || 0)), // Simulated spending
-      target: 5000,
-      gradient: "bg-gradient-to-br from-pink-500 to-rose-700",
-    },
-  ];
-
-  const unlockedAchievements = achievements.filter(
-    (achievement) => achievement.current >= achievement.target
-  ).length;
+  const initials = userProfile?.email?.charAt(0).toUpperCase() || "U";
 
   return (
-    <div className="max-w-md mx-auto min-h-screen pb-24">
+    <div className="bg-premium-dark min-h-screen">
       <Header />
-
-      <main className="p-4 space-y-6">
-        {/* Profile Header Card */}
-        <div className="glass-effect rounded-2xl p-4 relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-20" style={{ background: "hsl(var(--orange))" }} />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full opacity-10" style={{ background: "hsl(var(--orange))" }} />
-          
-          <div className="relative z-10 flex items-start gap-3 mb-4">
-            {userProfile?.avatar_url ? (
-              <div className="w-16 h-16 flex-shrink-0 rounded-full overflow-hidden neon-glow border-2 border-orange">
-                <img
-                  src={userProfile.avatar_url}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-16 h-16 flex-shrink-0 rounded-full gradient-orange flex items-center justify-center text-white font-bold text-xl neon-glow">
-                {initials}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold truncate">{userProfile?.full_name || "User"}</h2>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                <Mail className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{userProfile?.email || "user@email.com"}</span>
-              </p>
-              <div className="flex items-center gap-2 mt-1.5">
-                {userProfile?.badge && (
-                  <UserBadge badge={userProfile.badge} size="md" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mt-4 relative z-10">
-            <div className="text-center">
-              {coinsLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin mx-auto text-orange" />
-              ) : (
-                <div className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                  {coins?.coins?.toLocaleString() || 0}
-                </div>
-              )}
-              <div className="text-xs text-muted-foreground">Coins</div>
-            </div>
-            <div className="text-center border-x border-border/50">
-              <div className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                {conversions?.length || 0}
-              </div>
-              <div className="text-xs text-muted-foreground">Conversions</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                {transactions?.length || 0}
-              </div>
-              <div className="text-xs text-muted-foreground">Transactions</div>
-            </div>
-          </div>
-
-          {/* Ad-Free Status */}
-          {adFreeStatus.isAdFree ? (
-            <div className="mt-4 relative z-10 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Check className="w-4 h-4 text-green-500" />
-                <p className="text-sm font-semibold text-green-500">Ad-Free Active</p>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Calendar className="w-3 h-3" />
-                <span>Expires {adFreeStatus.timeRemaining}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 ml-4.5">
-                {adFreeStatus.formattedDate}
-              </p>
+      <main className="px-6 py-4 space-y-4">
+        {/* Section 1: User Identity */}
+        <div className="h-[120px] flex items-center">
+          {userProfile?.avatar_url ? (
+            <div className="w-20 h-20 flex-shrink-0 rounded-full overflow-hidden border-2 border-premium-orange">
+              <img
+                src={userProfile.avatar_url}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             </div>
           ) : (
-            <div className="mt-4 relative z-10 bg-muted/50 border border-border rounded-lg p-3">
-              <p className="text-xs text-muted-foreground text-center">
-                Purchase coins to remove ads
-              </p>
+            <div className="w-20 h-20 flex-shrink-0 rounded-full bg-premium-orange flex items-center justify-center text-white font-bold text-4xl border-2 border-premium-orange">
+              {initials}
             </div>
           )}
+          <div className="ml-4">
+            <p className="text-lg font-semibold text-white">{userProfile?.email || "user@email.com"}</p>
+            <p className="text-sm text-[#999999]">Free Account</p>
+          </div>
         </div>
 
-        {/* Coin Balance & Purchase */}
-        <div className="glass-effect rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Coins className="w-5 h-5 text-orange" />
-              Coin Balance
-            </h3>
-            <Button
-              onClick={() => setShowCoinModal(true)}
-              size="sm"
-              className="gradient-orange text-white hover:opacity-90"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Buy Coins
-            </Button>
-          </div>
-          <div className="flex items-center justify-between p-4 glass-effect rounded-xl">
-            <div>
-              <p className="text-sm text-muted-foreground">Available Balance</p>
-              {coinsLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin text-orange mt-1" />
-              ) : (
-                <p className="text-3xl font-bold text-orange">{coins?.coins?.toLocaleString() || 0}</p>
-              )}
+        {/* Section 2: Coin Balance & Top-Up */}
+        <div>
+          <hr className="border-t border-[#2A2A2A]" />
+          <div className="mt-4 bg-[#1E1E1E] rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Coins className="w-6 h-6 text-premium-orange mr-2" />
+                <span className="text-2xl font-bold text-white">{coins?.coins?.toLocaleString() || 0} Coins</span>
+              </div>
+              <Button className="bg-premium-orange text-white rounded-xl text-base font-medium h-full">
+                Buy Coins
+              </Button>
             </div>
-            <div className="w-16 h-16 rounded-full gradient-orange flex items-center justify-center neon-glow">
-              <Coins className="w-8 h-8 text-white" />
-            </div>
+            <p className="text-xs text-[#888888] mt-2">
+              Purchase coins to remove ads or unlock conversions
+            </p>
           </div>
         </div>
 
-        {/* Achievements */}
-        <div className="glass-effect rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Award className="w-5 h-5 text-orange" />
-              Achievements
-            </h3>
-            <span className="text-xs bg-orange/20 text-orange px-3 py-1 rounded-full font-semibold">
-              {unlockedAchievements}/{achievements.length}
-            </span>
+        {/* Section 3: Quick Stats */}
+        <div className="flex space-x-2">
+          <div className="bg-[#2A2A2A] text-[#AAAAAA] text-xs px-3 py-1 rounded-full">
+            Total Conversions · {conversions?.length || 0}
           </div>
-          <div className="grid grid-cols-1 gap-3">
-            {achievements.map((achievement, index) => (
-              <AchievementCard
-                key={index}
-                icon={achievement.icon}
-                title={achievement.title}
-                description={achievement.description}
-                current={achievement.current}
-                target={achievement.target}
-                unlocked={achievement.current >= achievement.target}
-                gradient={achievement.gradient}
-              />
-            ))}
+          <div className="bg-[#2A2A2A] text-[#AAAAAA] text-xs px-3 py-1 rounded-full">
+            Files Processed · {conversions?.length || 0}
           </div>
         </div>
 
-        {/* Settings Section */}
-        <div className="glass-effect rounded-2xl p-4">
-          <h3 className="font-semibold mb-3">Settings</h3>
-          <div className="space-y-2">
-            <button 
-              onClick={() => setShowEditModal(true)}
-              className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-orange" />
-                <span className="text-sm">Edit Profile</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
-              <div className="flex items-center gap-3">
-                <CreditCard className="w-5 h-5 text-orange" />
-                <span className="text-sm">Payment Methods</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-orange" />
-                <span className="text-sm">Privacy & Security</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-orange" />
-                <span className="text-sm">Notifications</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-
-            <button
-              onClick={() => navigate("/settings")}
-              className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Palette className="w-5 h-5 text-orange" />
-                <span className="text-sm">Theme</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
-              <div className="flex items-center gap-3">
-                <Globe className="w-5 h-5 text-orange" />
-                <span className="text-sm">Language</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 rounded-xl transition-colors">
-              <div className="flex items-center gap-3">
-                <HelpCircle className="w-5 h-5 text-orange" />
-                <span className="text-sm">Help & Support</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
+        {/* Section 4: Settings List */}
+        <div className="bg-[#1E1E1E] rounded-2xl">
+          <SettingsButton text="Upgrade to PRO" special />
+          <SettingsButton text="Payment Methods" />
+          <SettingsButton text="Privacy & Security" />
+          <SettingsButton
+            text="Notifications"
+            onClick={() => navigate("/notifications")}
+          />
+          <SettingsButton
+            text="Appearance"
+            onClick={() => navigate("/settings")}
+          />
+          <SettingsButton text="Language & Region" />
+          <SettingsButton text="Help & Support" />
         </div>
 
-        {/* Sign Out Button */}
-        <Button
-          onClick={handleSignOut}
-          variant="outline"
-          className="w-full glass-effect border-red-500/20 text-red-500 hover:bg-red-500/10 py-6"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
+        <div className="text-center mt-10">
+          <button
+            onClick={handleSignOut}
+            className="text-red-500"
+          >
+            Sign Out
+          </button>
+        </div>
       </main>
-
-      <BannerAd className="mx-4 mb-4" />
+      <div className="h-24" />
       <BottomNav />
-      <CoinPurchaseModal isOpen={showCoinModal} onClose={() => setShowCoinModal(false)} />
-      <ProfileEditModal 
-        isOpen={showEditModal} 
-        onClose={() => setShowEditModal(false)}
-        currentProfile={{
-          full_name: userProfile?.full_name || null,
-          avatar_url: userProfile?.avatar_url || null,
-        }}
-        onUpdate={fetchProfile}
-      />
     </div>
   );
 };
+
+const SettingsButton = ({
+  text,
+  special = false,
+  onClick,
+}: {
+  text: string;
+  special?: boolean;
+  onClick?: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="w-full flex items-center justify-between p-4 border-b border-[#2A2A2A] last:border-b-0"
+  >
+    <span className={special ? "text-premium-orange" : "text-white"}>
+      {text}
+    </span>
+    <ChevronRight className="w-5 h-5 text-[#999999]" />
+  </button>
+);
 
 export default Profile;
