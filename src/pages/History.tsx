@@ -3,13 +3,19 @@ import { BottomNav } from "@/components/BottomNav";
 import { BannerAd } from "@/components/BannerAd";
 import { FileText, FilePlus, Merge, Download, Clock, Loader2 } from "lucide-react";
 import { useConversions, useConversionDownload } from "@/hooks/useConversions";
+import { useRealtimeConversions } from "@/hooks/useRealtimeConversions";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ConversionProgress } from "@/components/ConversionProgress";
 
 const History = () => {
   const { data: conversions, isLoading } = useConversions();
   const { downloadFile } = useConversionDownload();
   const { toast } = useToast();
+  
+  // Subscribe to realtime updates
+  useRealtimeConversions();
 
   const getIconAndGradient = (conversionType: string) => {
     const config: Record<string, { icon: JSX.Element; gradient: string }> = {
@@ -111,6 +117,8 @@ const History = () => {
           <div className="space-y-4">
             {conversions.map((conversion) => {
               const { icon, gradient } = getIconAndGradient(conversion.conversion_type);
+              const isProcessing = conversion.status === 'pending' || conversion.status === 'processing';
+              
               return (
                 <div key={conversion.id} className="glass-effect rounded-2xl p-4">
                   <div className="flex items-center mb-3">
@@ -132,6 +140,18 @@ const History = () => {
                       </Button>
                     )}
                   </div>
+
+                  {/* Progress indicator for pending/processing conversions */}
+                  {isProcessing && (
+                    <div className="mb-3">
+                      <ConversionProgress
+                        status={conversion.status}
+                        createdAt={conversion.created_at}
+                        completedAt={conversion.completed_at}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between text-sm">
                     <span className={`font-medium ${
                       conversion.status === "completed" ? "text-green-500" : 
@@ -139,7 +159,6 @@ const History = () => {
                       "text-yellow-500"
                     }`}>
                       {conversion.status.charAt(0).toUpperCase() + conversion.status.slice(1)}
-                      {conversion.status === "processing" && <Loader2 className="w-3 h-3 inline ml-1 animate-spin" />}
                     </span>
                     <span className="text-muted-foreground">-{conversion.cost} coins</span>
                   </div>

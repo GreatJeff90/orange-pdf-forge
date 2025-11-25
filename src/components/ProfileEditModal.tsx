@@ -97,7 +97,9 @@ export const ProfileEditModal = ({ isOpen, onClose, currentProfile, onUpdate }: 
 
     try {
       const fileExt = selectedFile.name.split(".").pop();
-      const fileName = `${userId}/avatar-${Date.now()}.${fileExt}`;
+      const fileName = `${userId}/avatars/avatar-${Date.now()}.${fileExt}`;
+
+      console.log("Uploading avatar to:", fileName);
 
       const { error: uploadError, data } = await supabase.storage
         .from("conversions")
@@ -107,14 +109,18 @@ export const ProfileEditModal = ({ isOpen, onClose, currentProfile, onUpdate }: 
         });
 
       if (uploadError) {
+        console.error("Upload error:", uploadError);
         throw uploadError;
       }
+
+      console.log("Upload successful:", data);
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from("conversions")
         .getPublicUrl(fileName);
 
+      console.log("Public URL:", urlData.publicUrl);
       return urlData.publicUrl;
     } catch (error: any) {
       console.error("Avatar upload error:", error);

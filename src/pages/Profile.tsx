@@ -1,6 +1,8 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { BannerAd } from "@/components/BannerAd";
+import { UserBadge } from "@/components/UserBadge";
+import { AchievementCard } from "@/components/AchievementCard";
 import { 
   User, 
   Mail, 
@@ -17,7 +19,15 @@ import {
   TrendingUp,
   Coins,
   Plus,
-  Loader2
+  Loader2,
+  Calendar,
+  Check,
+  Zap,
+  Target,
+  Trophy,
+  Rocket,
+  Crown,
+  Flame
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserCoins, useTransactions } from "@/hooks/useCoins";
@@ -26,6 +36,7 @@ import { CoinPurchaseModal } from "@/components/CoinPurchaseModal";
 import { ProfileEditModal } from "@/components/ProfileEditModal";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getAdFreeStatus } from "@/lib/adFreeUtils";
 
 const Profile = () => {
   const [showCoinModal, setShowCoinModal] = useState(false);
@@ -62,19 +73,93 @@ const Profile = () => {
     .join("")
     .toUpperCase() || "U";
 
+  const adFreeStatus = getAdFreeStatus(coins?.adFreeUntil || null);
+
+  // Achievement definitions
+  const achievements = [
+    {
+      icon: Zap,
+      title: "First Steps",
+      description: "Complete your first conversion",
+      current: conversions?.length || 0,
+      target: 1,
+      gradient: "bg-gradient-to-br from-blue-500 to-blue-700",
+    },
+    {
+      icon: Target,
+      title: "Getting Started",
+      description: "Complete 10 conversions",
+      current: conversions?.length || 0,
+      target: 10,
+      gradient: "bg-gradient-to-br from-green-500 to-green-700",
+    },
+    {
+      icon: TrendingUp,
+      title: "Rising Star",
+      description: "Complete 50 conversions",
+      current: conversions?.length || 0,
+      target: 50,
+      gradient: "bg-gradient-to-br from-purple-500 to-purple-700",
+    },
+    {
+      icon: Trophy,
+      title: "Century Club",
+      description: "Complete 100 conversions",
+      current: conversions?.length || 0,
+      target: 100,
+      gradient: "bg-gradient-to-br from-yellow-500 to-yellow-700",
+    },
+    {
+      icon: Rocket,
+      title: "Power User",
+      description: "Complete 500 conversions",
+      current: conversions?.length || 0,
+      target: 500,
+      gradient: "bg-gradient-to-br from-red-500 to-red-700",
+    },
+    {
+      icon: Crown,
+      title: "Legend",
+      description: "Complete 1000 conversions",
+      current: conversions?.length || 0,
+      target: 1000,
+      gradient: "bg-gradient-to-br from-amber-500 to-yellow-600",
+    },
+    {
+      icon: Coins,
+      title: "Coin Collector",
+      description: "Earn 10,000 coins",
+      current: coins?.coins || 0,
+      target: 10000,
+      gradient: "bg-gradient-to-br from-orange-500 to-orange-700",
+    },
+    {
+      icon: Flame,
+      title: "Big Spender",
+      description: "Spend 5,000 coins on purchases",
+      current: Math.max(0, 100 - (coins?.coins || 0)), // Simulated spending
+      target: 5000,
+      gradient: "bg-gradient-to-br from-pink-500 to-rose-700",
+    },
+  ];
+
+  const unlockedAchievements = achievements.filter(
+    (achievement) => achievement.current >= achievement.target
+  ).length;
+
   return (
     <div className="max-w-md mx-auto min-h-screen pb-24">
       <Header />
 
       <main className="p-4 space-y-6">
         {/* Profile Header Card */}
-        <div className="glass-effect rounded-2xl p-6 relative overflow-hidden">
+        <div className="glass-effect rounded-2xl p-4 relative overflow-hidden">
           <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-20" style={{ background: "hsl(var(--orange))" }} />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full opacity-10" style={{ background: "hsl(var(--orange))" }} />
           
-          <div className="relative z-10 flex items-center mb-4">
+          <div className="relative z-10 flex items-start gap-3 mb-4">
             {userProfile?.avatar_url ? (
-              <div className="w-20 h-20 rounded-full overflow-hidden mr-4 neon-glow border-2 border-orange">
+              <div className="w-16 h-16 flex-shrink-0 rounded-full overflow-hidden neon-glow border-2 border-orange">
                 <img
                   src={userProfile.avatar_url}
                   alt="Profile"
@@ -82,50 +167,72 @@ const Profile = () => {
                 />
               </div>
             ) : (
-              <div className="w-20 h-20 rounded-full gradient-orange flex items-center justify-center text-white font-bold text-2xl mr-4 neon-glow">
+              <div className="w-16 h-16 flex-shrink-0 rounded-full gradient-orange flex items-center justify-center text-white font-bold text-xl neon-glow">
                 {initials}
               </div>
             )}
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">{userProfile?.full_name || "User"}</h2>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <Mail className="w-3 h-3" />
-                {userProfile?.email || "user@email.com"}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold truncate">{userProfile?.full_name || "User"}</h2>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                <Mail className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{userProfile?.email || "user@email.com"}</span>
               </p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="px-3 py-1 rounded-full gradient-orange text-white text-xs font-medium flex items-center gap-1">
-                  <Star className="w-3 h-3" />
-                  Premium Member
-                </div>
+              <div className="flex items-center gap-2 mt-1.5">
+                {userProfile?.badge && (
+                  <UserBadge badge={userProfile.badge} size="md" />
+                )}
               </div>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6 relative z-10">
+          <div className="grid grid-cols-3 gap-3 mt-4 relative z-10">
             <div className="text-center">
               {coinsLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin mx-auto text-orange" />
+                <Loader2 className="w-5 h-5 animate-spin mx-auto text-orange" />
               ) : (
-                <div className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
-                  {coins?.toLocaleString() || 0}
+                <div className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
+                  {coins?.coins?.toLocaleString() || 0}
                 </div>
               )}
               <div className="text-xs text-muted-foreground">Coins</div>
             </div>
             <div className="text-center border-x border-border/50">
-              <div className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
+              <div className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
                 {conversions?.length || 0}
               </div>
               <div className="text-xs text-muted-foreground">Conversions</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
+              <div className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
                 {transactions?.length || 0}
               </div>
               <div className="text-xs text-muted-foreground">Transactions</div>
             </div>
           </div>
+
+          {/* Ad-Free Status */}
+          {adFreeStatus.isAdFree ? (
+            <div className="mt-4 relative z-10 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Check className="w-4 h-4 text-green-500" />
+                <p className="text-sm font-semibold text-green-500">Ad-Free Active</p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                <span>Expires {adFreeStatus.timeRemaining}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 ml-4.5">
+                {adFreeStatus.formattedDate}
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 relative z-10 bg-muted/50 border border-border rounded-lg p-3">
+              <p className="text-xs text-muted-foreground text-center">
+                Purchase coins to remove ads
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Coin Balance & Purchase */}
@@ -150,7 +257,7 @@ const Profile = () => {
               {coinsLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin text-orange mt-1" />
               ) : (
-                <p className="text-3xl font-bold text-orange">{coins?.toLocaleString() || 0}</p>
+                <p className="text-3xl font-bold text-orange">{coins?.coins?.toLocaleString() || 0}</p>
               )}
             </div>
             <div className="w-16 h-16 rounded-full gradient-orange flex items-center justify-center neon-glow">
@@ -161,26 +268,28 @@ const Profile = () => {
 
         {/* Achievements */}
         <div className="glass-effect rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold flex items-center gap-2">
               <Award className="w-5 h-5 text-orange" />
               Achievements
             </h3>
-            <span className="text-xs text-orange">3/12</span>
+            <span className="text-xs bg-orange/20 text-orange px-3 py-1 rounded-full font-semibold">
+              {unlockedAchievements}/{achievements.length}
+            </span>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl gradient-orange flex items-center justify-center neon-glow">
-              <TrendingUp className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl glass-effect flex items-center justify-center border-2 border-dashed border-border">
-              <Award className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl glass-effect flex items-center justify-center border-2 border-dashed border-border">
-              <Star className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <div className="flex-shrink-0 w-16 h-16 rounded-xl glass-effect flex items-center justify-center border-2 border-dashed border-border">
-              <Coins className="w-8 h-8 text-muted-foreground" />
-            </div>
+          <div className="grid grid-cols-1 gap-3">
+            {achievements.map((achievement, index) => (
+              <AchievementCard
+                key={index}
+                icon={achievement.icon}
+                title={achievement.title}
+                description={achievement.description}
+                current={achievement.current}
+                target={achievement.target}
+                unlocked={achievement.current >= achievement.target}
+                gradient={achievement.gradient}
+              />
+            ))}
           </div>
         </div>
 

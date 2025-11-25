@@ -106,7 +106,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ad_free_until: string | null
           avatar_url: string | null
+          badge: string | null
           coins: number
           created_at: string | null
           email: string
@@ -115,7 +117,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ad_free_until?: string | null
           avatar_url?: string | null
+          badge?: string | null
           coins?: number
           created_at?: string | null
           email: string
@@ -124,7 +128,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ad_free_until?: string | null
           avatar_url?: string | null
+          badge?: string | null
           coins?: number
           created_at?: string | null
           email?: string
@@ -190,6 +196,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      extend_ad_free_time: {
+        Args: { p_coins: number; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {

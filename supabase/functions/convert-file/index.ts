@@ -24,10 +24,6 @@ const ConversionRequestSchema = z.object({
     .min(1, "File path cannot be empty")
     .max(500, "File path too long")
     .regex(/^[a-zA-Z0-9/_.-]+$/, "Invalid characters in file path"),
-  cost: z.number()
-    .int("Cost must be an integer")
-    .min(0, "Cost cannot be negative")
-    .max(1000, "Cost exceeds maximum allowed"),
   options: z.object({
     compressionLevel: z.number()
       .int()
@@ -47,7 +43,6 @@ const ConversionRequestSchema = z.object({
 interface ConversionRequest {
   conversionType: string;
   inputFilePath: string;
-  cost: number;
   options?: {
     compressionLevel?: number;
     splitOption?: string;
@@ -62,20 +57,56 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const authHeader = req.headers.get("authorization");
+    console.log("Authorization header present:", !!authHeader);
+    
     if (!authHeader) {
-      throw new Error("No authorization header");
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "No authorization header" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
     );
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error("Unauthorized");
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError) {
+      console.error("Auth error:", userError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", details: userError.message }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
+    
+    if (!user) {
+      console.error("No user found in session");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - No user found" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
+    console.log("User authenticated:", user.id);
 
     // Parse and validate input
     const rawInput = await req.json();
@@ -95,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { conversionType, inputFilePath, cost, options }: ConversionRequest = validationResult.data;
+    const { conversionType, inputFilePath, options }: ConversionRequest = validationResult.data;
     
     // Additional security: Verify the file path belongs to the user's directory
     if (!inputFilePath.startsWith(`${user.id}/`)) {
@@ -111,10 +142,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("Starting conversion:", { conversionType, inputFilePath, user: user.id });
 
-    // Check if user has enough coins
+    // Conversions are FREE - just verify user profile exists
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("coins")
+      .select("id")
       .eq("id", user.id)
       .single();
 
@@ -122,17 +153,8 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error fetching profile:", profileError);
       throw new Error("Failed to fetch user profile");
     }
-
-    if (profile.coins < cost) {
-      console.log("Insufficient coins:", { has: profile.coins, needs: cost });
-      return new Response(
-        JSON.stringify({ error: "Insufficient coins" }),
-        {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    
+    console.log("Conversion is free - no coin check needed");
 
     // Create conversion record
     const { data: conversion, error: insertError } = await supabase
@@ -141,7 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
         user_id: user.id,
         conversion_type: conversionType,
         input_file_path: inputFilePath,
-        cost: cost,
+        cost: 0,
         status: "processing",
       })
       .select()
@@ -153,26 +175,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Conversion record created:", conversion.id);
-
-    // Deduct coins using the database function
-    const { data: deductResult, error: deductError } = await supabase.rpc("deduct_coins", {
-      p_user_id: user.id,
-      p_amount: cost,
-      p_description: `${conversionType} conversion`,
-      p_conversion_id: conversion.id,
-    });
-
-    if (deductError || !deductResult) {
-      console.error("Error deducting coins:", deductError);
-      // Mark conversion as failed
-      await supabase
-        .from("conversions")
-        .update({ status: "failed", error_message: "Failed to deduct coins" })
-        .eq("id", conversion.id);
-      throw new Error("Failed to deduct coins");
-    }
-
-    console.log("Coins deducted successfully");
+    
+    // Conversions are FREE - no coin deduction needed
+    console.log("Starting free conversion for user:", user.id);
 
     // Get the file from storage
     const { data: fileData, error: downloadError } = await supabase.storage

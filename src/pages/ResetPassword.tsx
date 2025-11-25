@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -96,8 +97,8 @@ const ResetPassword = () => {
       <div className="w-full max-w-md relative z-10">
         <div className="glass-card p-8 rounded-2xl shadow-2xl">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/20 rounded-full mb-4">
-              <Lock className="w-8 h-8 text-primary" />
+            <div className="flex items-center justify-center mb-4">
+              <img src={logo} alt="PDF-Orange" className="w-16 h-16 rounded-xl" />
             </div>
             <h1 className="text-3xl font-bold mb-2">Reset Password</h1>
             <p className="text-muted-foreground">
