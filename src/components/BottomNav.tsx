@@ -4,10 +4,7 @@ import { NavLink } from "./NavLink";
 export const BottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 p-4">
-      <div className="max-w-md mx-auto rounded-[50px] overflow-hidden" style={{
-        background: "rgba(255, 107, 0, 0.9)",
-        backdropFilter: "blur(15px)"
-      }}>
+      <div className="max-w-md mx-auto rounded-[50px] overflow-hidden bg-orange/90 backdrop-blur-lg">
         <div className="grid grid-cols-4 text-white/70">
           <NavLink
             to="/"
