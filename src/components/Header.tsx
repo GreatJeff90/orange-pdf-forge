@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, Coins } from "lucide-react";
+import { Moon, Sun, Bell, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -70,23 +70,6 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to logout. Please try again.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Logged out",
-        description: "You've been successfully logged out.",
-      });
-      navigate("/onboarding");
-    }
-  };
-
   return (
     <header className="glass-effect rounded-b-3xl p-4">
       <div className="flex justify-between items-center">
@@ -100,13 +83,25 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <div 
-            onClick={() => navigate("/profile")}
-            className="glass-effect px-3 py-1.5 rounded-full flex items-center gap-2 cursor-pointer hover:bg-secondary/50 transition-colors"
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/notifications")}
+            className="w-10 h-10 rounded-full glass-effect hover:bg-orange-500/20"
+            title="Notifications"
           >
-            <Coins className="w-4 h-4 text-orange" />
-            <span className="text-sm font-bold text-orange">{coins?.coins?.toLocaleString() || 0}</span>
-          </div>
+            <Bell className="w-5 h-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/settings")}
+            className="w-10 h-10 rounded-full glass-effect hover:bg-orange-500/20"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
 
           <button
             onClick={toggleTheme}
@@ -119,17 +114,25 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
             )}
           </button>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="w-10 h-10 rounded-full glass-effect hover:bg-orange-500/20"
-            title="Logout"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
-          
-       
+          {profile?.avatar_url ? (
+            <div 
+              onClick={() => navigate("/profile")}
+              className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <img
+                src={profile.avatar_url}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div 
+              onClick={() => navigate("/profile")}
+              className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
+            </div>
+          )}
         </div>
       </div>
 
