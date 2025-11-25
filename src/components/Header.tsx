@@ -129,25 +129,7 @@ export const Header = ({ showUserInfo = false }: { showUserInfo?: boolean }) => 
             <LogOut className="w-5 h-5" />
           </Button>
           
-          {profile?.avatar_url ? (
-            <div 
-              onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-full overflow-hidden border-2 border-orange cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <img
-                src={profile.avatar_url}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div 
-              onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-full gradient-orange flex items-center justify-center text-white font-bold cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <span>{user?.email?.charAt(0).toUpperCase() || "U"}</span>
-            </div>
-          )}
+       
         </div>
       </div>
 
