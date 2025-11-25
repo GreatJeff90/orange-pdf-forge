@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FileText, Image, Scissors, FileStack, Award } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const onboardingSlides = [
   {
@@ -52,8 +53,19 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-secondary">
       <div className="max-w-md mx-auto w-full min-h-screen flex flex-col p-6">
+        {/* Logo Header */}
+        <div className="flex items-center justify-center mb-6">
+          <img src={logo} alt="PDF-Orange" className="w-12 h-12 rounded-xl mr-3" />
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-orange to-orange-light bg-clip-text text-transparent">
+              PDF-Orange
+            </h1>
+            <p className="text-xs text-muted-foreground">Futuristic PDF Tools</p>
+          </div>
+        </div>
+
         {/* Skip Button */}
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-end mb-4">
           <Button
             variant="ghost"
             onClick={skipOnboarding}
