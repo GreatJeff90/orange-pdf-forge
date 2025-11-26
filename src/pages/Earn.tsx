@@ -1,26 +1,50 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
-import { BannerAd } from "@/components/BannerAd";
 import { Button } from "@/components/ui/button";
-import { Gift, Users, Calendar, Coins, Play } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Play, Download, Star, HelpCircle } from "lucide-react";
 import { useAdMob } from "@/hooks/useAdMob";
-import { useAddCoins } from "@/hooks/useCoins";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 
+const DAILY_AD_LIMIT = 10;
+
 const Earn = () => {
   const { showRewardedAd, isNative } = useAdMob();
-  const { addCoins } = useAddCoins();
   const { toast } = useToast();
   const [isWatching, setIsWatching] = useState(false);
+  const [adWatchCount, setAdWatchCount] = useState(0);
+
+  useEffect(() => {
+    const fetchAdWatchCount = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase.rpc('get_daily_ad_watch_count', {
+          p_user_id: user.id,
+        });
+        if (!error) {
+          setAdWatchCount(data);
+        }
+      }
+    };
+
+    fetchAdWatchCount();
+  }, []);
 
   const handleWatchAd = async () => {
+    if (adWatchCount >= DAILY_AD_LIMIT) {
+      toast({
+        title: "Daily limit reached",
+        description: `You can watch a maximum of ${DAILY_AD_LIMIT} ads per day.`,
+      });
+      return;
+    }
+
     setIsWatching(true);
     try {
       await showRewardedAd(async (reward) => {
-        // Add 1 coin for watching the ad
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { error } = await supabase.rpc("add_coins", {
@@ -30,6 +54,7 @@ const Earn = () => {
           });
 
           if (!error) {
+            setAdWatchCount(adWatchCount + 1);
             confetti({
               particleCount: 50,
               spread: 60,
@@ -46,6 +71,11 @@ const Earn = () => {
       });
     } catch (error) {
       console.error('Error watching ad:', error);
+      toast({
+        title: "Error",
+        description: "Could not show ad. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setIsWatching(false);
     }
@@ -54,94 +84,90 @@ const Earn = () => {
   return (
     <div className="max-w-md mx-auto min-h-screen pb-24">
       <Header />
-      <main className="p-4 space-y-6">
-        <div className="glass-effect rounded-2xl p-6 text-center">
-          <div className="w-20 h-20 gradient-orange rounded-full flex items-center justify-center mx-auto mb-4">
-            <Coins className="w-10 h-10 text-white" />
+      <main className="p-4 space-y-4">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2">
+            <h2 className="text-2xl font-bold">Get More Coins</h2>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="text-muted-foreground">
+                  <HelpCircle className="w-4 h-4" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xs">
+                <DialogHeader>
+                  <DialogTitle>Why coins?</DialogTitle>
+                </DialogHeader>
+                <DialogDescription>
+                  Coins let us keep basic conversions free while covering server costs.
+                </DialogDescription>
+              </DialogContent>
+            </Dialog>
           </div>
-          <h2 className="text-2xl font-bold mb-2">Earn Free Coins</h2>
-          <p className="text-muted-foreground">Complete tasks to earn more coins</p>
-        </div>
-
-        {/* Watch Ad for Coins - Featured */}
-        <div className="glass-effect rounded-2xl p-6 border-2 border-orange-500 shadow-lg shadow-orange/20">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center">
-                <Play className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <p className="font-bold text-lg">Watch Video Ad</p>
-                <p className="text-sm text-orange font-semibold">+1 coin per ad</p>
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mb-4">
-            Watch a short video to earn 1 coin instantly. Watch 1000 ads = 1 month ad-free!
+          <p className="text-sm text-muted-foreground" style={{ color: '#AAAAAA' }}>
+            Keep using the app for free by completing quick offers
           </p>
+        </div>
+
+        {/* Watch Video */}
+        <div className="bg-muted-gray rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Play className="w-6 h-6 text-muted-foreground" />
+            <div>
+              <p className="font-semibold">Watch a short video</p>
+              <p className="text-xs text-muted-foreground">
+                +1 coin per video (max {DAILY_AD_LIMIT}/day) - Watched: {adWatchCount}/{DAILY_AD_LIMIT}
+              </p>
+            </div>
+          </div>
           <Button
+            variant="ghost"
+            size="sm"
             onClick={handleWatchAd}
-            disabled={isWatching}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-6 text-base font-medium"
+            disabled={isWatching || adWatchCount >= DAILY_AD_LIMIT}
           >
-            {isWatching ? (
-              <>Loading Ad...</>
-            ) : (
-              <>
-                <Play className="w-5 h-5 mr-2" />
-                Watch Ad & Earn
-              </>
-            )}
+            {isWatching ? "Loading..." : "Watch"}
           </Button>
-          {!isNative && (
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              📱 Rewarded ads available in mobile app
-            </p>
-          )}
         </div>
 
-        <div className="space-y-4">
-          <div className="glass-effect rounded-2xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-white" />
-              </div>
+        {/* Install Sponsored App */}
+        <div className="bg-muted-gray rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Download className="w-6 h-6 text-muted-foreground" />
               <div>
-                <p className="font-medium">Daily Login</p>
-                <p className="text-xs text-muted-foreground">+10 coins per day</p>
+                <p className="font-semibold">Install & Open Sponsored App</p>
+                <p className="text-xs text-muted-foreground">+25-50 coins</p>
               </div>
             </div>
-            <span className="text-orange font-bold">+10</span>
           </div>
+          <p className="text-xs text-muted-foreground mt-2 pl-10">
+            Sponsored – you’ll be taken to the App Store
+          </p>
+        </div>
 
-          <div className="glass-effect rounded-2xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
+        {/* Upgrade to PRO */}
+        <div className="bg-muted-gray rounded-2xl p-4 border border-orange-500/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Star className="w-6 h-6 text-orange-500" />
               <div>
-                <p className="font-medium">Refer a Friend</p>
-                <p className="text-xs text-muted-foreground">+50 coins per referral</p>
+                <p className="font-semibold text-orange-500">Upgrade to PRO – Best Value</p>
+                <p className="text-xs text-muted-foreground">Remove ads forever + unlimited conversions</p>
               </div>
             </div>
-            <span className="text-orange font-bold">+50</span>
-          </div>
-
-          <div className="glass-effect rounded-2xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
-                <Gift className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="font-medium">Special Bonus</p>
-                <p className="text-xs text-muted-foreground">Complete 10 conversions</p>
-              </div>
-            </div>
-            <span className="text-orange font-bold">+100</span>
+            <Button variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500/10 hover:text-orange-500">
+              See Plans
+            </Button>
           </div>
         </div>
 
-        <BannerAd className="mt-6" />
+
+        {!isNative && (
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            📱 Rewarded ads available in mobile app
+          </p>
+        )}
       </main>
       <BottomNav />
     </div>

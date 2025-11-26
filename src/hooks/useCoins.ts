@@ -22,7 +22,7 @@ export function useUserCoins() {
     queryKey: ["user-coins"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) return null;
 
       const { data, error } = await supabase
         .from("profiles")
