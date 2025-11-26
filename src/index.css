@@ -38,6 +38,13 @@ All colors MUST be HSL.
 
     --radius: 1rem;
 
+    --premium-dark: 0 0% 7%;
+    --premium-orange: 26 100% 50%;
+    --premium-gray: 0 0% 60%;
+    --premium-gray-dark: 0 0% 16%;
+
+    --muted-gray: 0 0% 12%;
+
     --orange: 36 100% 50%;
     --orange-light: 39 100% 55%;
 

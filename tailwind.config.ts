@@ -68,6 +68,11 @@ export default {
           bg: "var(--glass-bg)",
           border: "var(--glass-border)",
         },
+        "premium-dark": "hsl(var(--premium-dark))",
+        "premium-orange": "hsl(var(--premium-orange))",
+        "premium-gray": "hsl(var(--premium-gray))",
+        "premium-gray-dark": "hsl(var(--premium-gray-dark))",
+        "muted-gray": "hsl(var(--muted-gray))",
       },
       borderRadius: {
         lg: "var(--radius)",
