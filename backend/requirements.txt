@@ -4,3 +4,4 @@ PyMuPDF
 pdf2docx
 python-multipart
 camelot-py[cv]
+pillow
