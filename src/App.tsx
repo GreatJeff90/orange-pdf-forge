@@ -34,9 +34,9 @@ const App = () => (
           <Route
             path="/"
             element={
-              <ProtectedRoute>
+              // <ProtectedRoute>
                 <Index />
-              </ProtectedRoute>
+              // </ProtectedRoute>
             }
           />
           <Route
@@ -58,9 +58,9 @@ const App = () => (
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
+              // <ProtectedRoute>
                 <Profile />
-              </ProtectedRoute>
+              // </ProtectedRoute>
             }
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

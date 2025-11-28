@@ -12,7 +12,8 @@ export const BannerAd = ({ className = '' }: BannerAdProps) => {
 
   useEffect(() => {
     // Only show ads if user is not ad-free (based on ad_free_until timestamp)
-    const shouldShowAd = userCoins !== undefined && !userCoins.isAdFree;
+    // Safely check userCoins
+    const shouldShowAd = userCoins && !userCoins.isAdFree;
 
     if (shouldShowAd && isNative) {
       showBannerAd();
@@ -26,7 +27,7 @@ export const BannerAd = ({ className = '' }: BannerAdProps) => {
   }, [userCoins, isNative, showBannerAd, removeBannerAd]);
 
   // For web preview, show a placeholder
-  if (!isNative && userCoins !== undefined && !userCoins.isAdFree) {
+  if (!isNative && userCoins && !userCoins.isAdFree) {
     return (
       <div className={`bg-muted border border-border rounded-lg p-4 text-center ${className}`}>
         <p className="text-xs text-muted-foreground">
