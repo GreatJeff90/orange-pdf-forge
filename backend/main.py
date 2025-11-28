@@ -4,14 +4,13 @@ import uuid
 from pathlib import Path
 from typing import List, Optional
 
-import fitz  # PyMuPDF
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from .converters import (
-    pdf_to_word,
-    pdf_to_images,
+    pdf_to_structured_data,
+    extract_images_from_pdf,
     images_to_pdf,
     merge_pdfs,
     split_pdf,
@@ -19,36 +18,16 @@ from .converters import (
     create_zip
 )
 
-# --- Constants ---
-# If the first 3 pages have less than this many characters, treat as scanned.
-SCANNED_TEXT_THRESHOLD = 300
-
 app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-def is_scanned_pdf(pdf_path: Path) -> bool:
-    """
-    Analyzes the first few pages of a PDF to determine if it is scanned.
-    """
-    total_text_len = 0
-    try:
-        doc = fitz.open(pdf_path)
-        num_pages_to_check = min(len(doc), 3)
-        for i in range(num_pages_to_check):
-            page = doc.load_page(i)
-            total_text_len += len(page.get_text("text"))
-        doc.close()
-    except Exception:
-        return False
-    return total_text_len < SCANNED_TEXT_THRESHOLD
 
 def cleanup_files(temp_dir: Path):
     """Safely remove the temporary directory and its contents."""
@@ -59,6 +38,10 @@ def cleanup_files(temp_dir: Path):
 
 @app.post("/convert/to-word")
 async def convert_to_word_endpoint(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    """
+    Converts PDF to structured data (CSV).
+    Note: Frontend calls this "PDF to Word", but we now return structured data.
+    """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file name provided.")
     if file.content_type != "application/pdf":
@@ -69,7 +52,8 @@ async def convert_to_word_endpoint(background_tasks: BackgroundTasks, file: Uplo
     background_tasks.add_task(cleanup_files, temp_dir)
 
     pdf_path = temp_dir / f"{uuid.uuid4()}.pdf"
-    docx_path = temp_dir / f"{original_filename_stem}.docx"
+    # Output as CSV for structured data
+    output_path = temp_dir / f"{original_filename_stem}.csv"
 
     try:
         with open(pdf_path, "wb") as buffer:
@@ -78,15 +62,14 @@ async def convert_to_word_endpoint(background_tasks: BackgroundTasks, file: Uplo
         file.file.close()
 
     try:
-        is_scanned = is_scanned_pdf(pdf_path)
-        pdf_to_word(pdf_path, docx_path, is_scanned)
+        pdf_to_structured_data(pdf_path, output_path, output_format='csv')
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to convert PDF: {e}")
 
     return FileResponse(
-        path=str(docx_path),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        filename=f"{original_filename_stem}.docx"
+        path=str(output_path),
+        media_type="text/csv",
+        filename=f"{original_filename_stem}.csv"
     )
 
 @app.post("/convert/to-images")
@@ -107,16 +90,18 @@ async def convert_to_images_endpoint(background_tasks: BackgroundTasks, file: Up
         file.file.close()
 
     try:
-        image_paths = pdf_to_images(pdf_path, temp_dir)
+        image_paths = extract_images_from_pdf(pdf_path, temp_dir)
         if not image_paths:
-             raise Exception("No images generated")
+             # If no images found, maybe return a message or empty zip?
+             # For now, let's raise an error so user knows
+             raise Exception("No embedded images found in PDF")
 
         # Create ZIP
         zip_path = temp_dir / f"{original_filename_stem}_images.zip"
         create_zip(image_paths, zip_path)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to convert PDF to images: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to extract images: {e}")
 
     return FileResponse(
         path=str(zip_path),
@@ -269,4 +254,4 @@ async def compress_pdf_endpoint(
 
 @app.get("/")
 def read_root():
-    return {"message": "PDF Conversion API is running."}
+    return {"message": "PDF Conversion API is running with PyPDF2 and Pandas."}

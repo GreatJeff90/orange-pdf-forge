@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
-PyMuPDF
-pdf2docx
+PyPDF2
+pandas
+openpyxl
 python-multipart
-camelot-py[cv]
 pillow
