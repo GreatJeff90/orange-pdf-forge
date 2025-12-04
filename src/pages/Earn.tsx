@@ -21,11 +21,18 @@ const Earn = () => {
     const fetchAdWatchCount = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data, error } = await supabase.rpc('get_daily_ad_watch_count', {
-          p_user_id: user.id,
-        });
-        if (!error) {
-          setAdWatchCount(data);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const { count, error } = await supabase
+          .from('transactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('description', 'Watched rewarded video ad')
+          .gte('created_at', today.toISOString());
+        
+        if (!error && count !== null) {
+          setAdWatchCount(count);
         }
       }
     };
