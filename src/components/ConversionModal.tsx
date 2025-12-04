@@ -155,10 +155,10 @@ export const ConversionModal = ({
         .from("conversions")
         .insert({
           user_id: userId,
-          conversion_type: conversionType,
-          input_file_path: inputPathStr, // Store all paths? or just first?
+          conversion_type: conversionType as any,
+          input_file_path: inputPathStr,
           cost: 0,
-          status: "processing",
+          status: "processing" as const,
         })
         .select()
         .single();
@@ -222,10 +222,10 @@ export const ConversionModal = ({
         .from("conversions")
         .insert({
           user_id: userId,
-          conversion_type: conversionType,
+          conversion_type: conversionType as any,
           input_file_path: uploadedPath,
           cost: 0,
-          status: "processing",
+          status: "processing" as const,
         })
         .select()
         .single();
