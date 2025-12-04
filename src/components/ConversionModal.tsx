@@ -19,6 +19,18 @@ interface ConversionModalProps {
   acceptedTypes: string[];
 }
 
+// Custom error class for better error tracking
+class ConversionError extends Error {
+  constructor(
+    message: string,
+    public stage: 'auth' | 'upload' | 'database' | 'backend' | 'storage' | 'unknown',
+    public originalError?: any
+  ) {
+    super(message);
+    this.name = 'ConversionError';
+  }
+}
+
 export const ConversionModal = ({
   isOpen,
   onClose,
@@ -34,7 +46,7 @@ export const ConversionModal = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [compressionLevel, setCompressionLevel] = useState(2);
   const [splitOption, setSplitOption] = useState<string | null>(null);
-  const [splitValue, setSplitValue] = useState<string>("1"); // Default for "Every N Pages"
+  const [splitValue, setSplitValue] = useState<string>("1");
   const [isProcessing, setIsProcessing] = useState(false);
   const { uploadFiles, uploading: fileUploading, progress } = useFileUpload();
   const { toast } = useToast();
@@ -56,7 +68,7 @@ export const ConversionModal = ({
     return typeMap[title] || "pdf_to_word";
   };
 
-  const getBackendEndpoint = (conversionType: string): string => {
+  const getBackendEndpoint = (conversionType: string): string | null => {
     const endpointMap: Record<string, string> = {
       "pdf_to_word": "/convert/to-word",
       "pdf_to_jpg": "/convert/to-images",
@@ -65,7 +77,7 @@ export const ConversionModal = ({
       "split_pdf": "/convert/split",
       "compress_pdf": "/convert/compress",
     };
-    return endpointMap[conversionType];
+    return endpointMap[conversionType] || null;
   };
 
   const handleConvert = async () => {
@@ -78,46 +90,69 @@ export const ConversionModal = ({
       return;
     }
 
+    setIsProcessing(true);
+    
     try {
-      setIsProcessing(true);
-      // Verify user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to convert files",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-        return;
+      // Step 1: Verify authentication
+      console.log("[Conversion] Step 1: Checking authentication...");
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError) {
+        throw new ConversionError(
+          `Authentication check failed: ${authError.message}`,
+          'auth',
+          authError
+        );
       }
+      
+      if (!session) {
+        throw new ConversionError(
+          "You must be logged in to convert files. Please sign in and try again.",
+          'auth'
+        );
+      }
+      console.log("[Conversion] Authentication verified for user:", session.user.id);
 
+      // Step 2: Validate conversion type
       const conversionType = getConversionType(title);
       const endpoint = getBackendEndpoint(conversionType);
+      console.log("[Conversion] Step 2: Conversion type:", conversionType, "Endpoint:", endpoint);
 
       if (!endpoint) {
-        toast({
-          title: "Not Implemented",
-          description: "This conversion type is not yet supported by the local backend.",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-        return;
+        throw new ConversionError(
+          `The conversion type "${title}" is not yet supported. Available types: PDF to Word, Compress PDF, Merge PDFs, Split PDF, PDF to Images, Images to PDF.`,
+          'unknown'
+        );
       }
 
-      // 1. Upload input files to Supabase Storage (for history/backup)
-      // Note: We could skip this and only upload the result, but having input is good for history.
+      // Step 3: Upload input files to Supabase Storage
+      console.log("[Conversion] Step 3: Uploading input files to storage...");
       const folderName = title.toLowerCase().replace(/\s+/g, "-");
-      const uploadedPaths = await uploadFiles(selectedFiles, {
-        folder: folderName,
-      });
-
-      // 2. Create "Processing" record in Supabase
-      // We'll just create one record for the batch if it's a merge/image-to-pdf,
-      // or one per file for others.
-      // For simplicity, let's assume one main record or handle per file if not merging.
       
+      let uploadedPaths: string[];
+      try {
+        uploadedPaths = await uploadFiles(selectedFiles, { folder: folderName });
+        
+        if (!uploadedPaths || uploadedPaths.length === 0) {
+          throw new Error("No file paths returned from upload");
+        }
+        
+        if (uploadedPaths.length !== selectedFiles.length) {
+          throw new Error(`Expected ${selectedFiles.length} uploads but got ${uploadedPaths.length}`);
+        }
+        
+        console.log("[Conversion] Files uploaded successfully:", uploadedPaths);
+      } catch (uploadError: any) {
+        throw new ConversionError(
+          `Failed to upload files to storage: ${uploadError.message || 'Unknown upload error'}`,
+          'upload',
+          uploadError
+        );
+      }
+
+      // Step 4: Process conversion
       const isBatchOperation = conversionType === "merge_pdf" || conversionType === "jpg_to_pdf";
+      console.log("[Conversion] Step 4: Processing conversion. Batch operation:", isBatchOperation);
 
       if (isBatchOperation) {
         await processBatchConversion(session.user.id, conversionType, endpoint, selectedFiles, uploadedPaths);
@@ -137,10 +172,41 @@ export const ConversionModal = ({
       setTimeout(() => onClose(), 1500);
 
     } catch (error: any) {
-      console.error("Conversion error:", error);
+      console.error("[Conversion] Error:", error);
+      
+      let errorTitle = "Conversion Failed";
+      let errorDescription = "An unexpected error occurred. Please try again.";
+      
+      if (error instanceof ConversionError) {
+        switch (error.stage) {
+          case 'auth':
+            errorTitle = "Authentication Error";
+            break;
+          case 'upload':
+            errorTitle = "Upload Error";
+            break;
+          case 'database':
+            errorTitle = "Database Error";
+            break;
+          case 'backend':
+            errorTitle = "Conversion Service Error";
+            break;
+          case 'storage':
+            errorTitle = "Storage Error";
+            break;
+        }
+        errorDescription = error.message;
+        
+        if (error.originalError) {
+          console.error("[Conversion] Original error:", error.originalError);
+        }
+      } else {
+        errorDescription = error.message || errorDescription;
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "An unexpected error occurred.",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {
@@ -148,54 +214,126 @@ export const ConversionModal = ({
     }
   };
 
-  const processBatchConversion = async (userId: string, conversionType: string, endpoint: string, files: File[], uploadedPaths: string[]) => {
-    // Create record
+  const processBatchConversion = async (
+    userId: string, 
+    conversionType: string, 
+    endpoint: string, 
+    files: File[], 
+    uploadedPaths: string[]
+  ) => {
+    // Step 4a: Create database record
+    console.log("[Batch Conversion] Creating database record...");
     const inputPathStr = uploadedPaths.join(",");
+    
     const { data: record, error: insertError } = await supabase
-        .from("conversions")
-        .insert({
-          user_id: userId,
-          conversion_type: conversionType as any,
-          input_file_path: inputPathStr,
-          cost: 0,
-          status: "processing" as const,
-        })
-        .select()
-        .single();
+      .from("conversions")
+      .insert({
+        user_id: userId,
+        conversion_type: conversionType as any,
+        input_file_path: inputPathStr,
+        cost: 0,
+        status: "processing" as const,
+      })
+      .select()
+      .single();
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      throw new ConversionError(
+        `Failed to create conversion record: ${insertError.message}`,
+        'database',
+        insertError
+      );
+    }
+    
+    if (!record) {
+      throw new ConversionError(
+        "Failed to create conversion record: No record returned",
+        'database'
+      );
+    }
+    
+    console.log("[Batch Conversion] Database record created:", record.id);
 
     try {
-      // Call Backend
+      // Step 4b: Call backend conversion service
+      console.log("[Batch Conversion] Calling backend service:", `${BACKEND_URL}${endpoint}`);
       const formData = new FormData();
-      files.forEach(file => formData.append("files", file));
-
-      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-        method: "POST",
-        body: formData,
+      files.forEach((file, index) => {
+        formData.append("files", file);
+        console.log(`[Batch Conversion] Added file ${index + 1}: ${file.name} (${file.size} bytes)`);
       });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || "Backend conversion failed");
+      let response: Response;
+      try {
+        response = await fetch(`${BACKEND_URL}${endpoint}`, {
+          method: "POST",
+          body: formData,
+        });
+      } catch (fetchError: any) {
+        throw new ConversionError(
+          `Failed to connect to conversion service: ${fetchError.message}. Please check if the backend server is running.`,
+          'backend',
+          fetchError
+        );
       }
 
-      const blob = await response.blob();
-      const outputFilename = `${Date.now()}_converted.pdf`; // Default name
-      const uploadPath = `${userId}/converted/${outputFilename}`;
+      console.log("[Batch Conversion] Backend response status:", response.status);
 
-      // Upload Output to Supabase
+      if (!response.ok) {
+        let errorMessage = `Backend returned status ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          // Response might not be JSON
+          try {
+            const textError = await response.text();
+            if (textError) errorMessage = textError;
+          } catch {
+            // Ignore text parsing error
+          }
+        }
+        throw new ConversionError(
+          `Conversion failed: ${errorMessage}`,
+          'backend'
+        );
+      }
+
+      // Step 4c: Get converted file
+      const blob = await response.blob();
+      console.log("[Batch Conversion] Received converted file:", blob.size, "bytes, type:", blob.type);
+      
+      if (blob.size === 0) {
+        throw new ConversionError(
+          "Conversion service returned an empty file",
+          'backend'
+        );
+      }
+
+      // Step 4d: Upload converted file to storage
+      const outputFilename = `${Date.now()}_converted.pdf`;
+      const uploadPath = `${userId}/converted/${outputFilename}`;
+      console.log("[Batch Conversion] Uploading converted file to:", uploadPath);
+
       const { error: uploadError } = await supabase.storage
         .from("conversions")
         .upload(uploadPath, blob, {
-          contentType: blob.type,
+          contentType: blob.type || "application/pdf",
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        throw new ConversionError(
+          `Failed to save converted file: ${uploadError.message}`,
+          'storage',
+          uploadError
+        );
+      }
+      
+      console.log("[Batch Conversion] Converted file saved successfully");
 
-      // Update Record
-      await supabase
+      // Step 4e: Update database record
+      const { error: updateError } = await supabase
         .from("conversions")
         .update({
           status: "completed",
@@ -204,21 +342,46 @@ export const ConversionModal = ({
         })
         .eq("id", record.id);
 
+      if (updateError) {
+        console.error("[Batch Conversion] Warning: Failed to update record status:", updateError);
+        // Don't throw here - conversion succeeded, just record update failed
+      }
+      
+      console.log("[Batch Conversion] Conversion completed successfully");
+
     } catch (err: any) {
-        await supabase
+      // Update record to failed status
+      console.error("[Batch Conversion] Conversion failed, updating record:", err.message);
+      await supabase
         .from("conversions")
-        .update({ status: "failed", error_message: err.message })
+        .update({ 
+          status: "failed", 
+          error_message: err.message || "Unknown error" 
+        })
         .eq("id", record.id);
-        throw err;
+      
+      throw err;
     }
   };
 
-  const processSingleFileConversions = async (userId: string, conversionType: string, endpoint: string, files: File[], uploadedPaths: string[]) => {
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const uploadedPath = uploadedPaths[i];
+  const processSingleFileConversions = async (
+    userId: string, 
+    conversionType: string, 
+    endpoint: string, 
+    files: File[], 
+    uploadedPaths: string[]
+  ) => {
+    const errors: string[] = [];
+    let successCount = 0;
 
-        const { data: record, error: insertError } = await supabase
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const uploadedPath = uploadedPaths[i];
+      
+      console.log(`[Single Conversion] Processing file ${i + 1}/${files.length}: ${file.name}`);
+
+      // Create database record
+      const { data: record, error: insertError } = await supabase
         .from("conversions")
         .insert({
           user_id: userId,
@@ -230,75 +393,147 @@ export const ConversionModal = ({
         .select()
         .single();
 
-        if (insertError) {
-            console.error("Failed to create record", insertError);
-            continue;
+      if (insertError) {
+        console.error(`[Single Conversion] Failed to create record for ${file.name}:`, insertError);
+        errors.push(`${file.name}: Failed to create database record`);
+        continue;
+      }
+
+      try {
+        // Build form data
+        const formData = new FormData();
+        formData.append("file", file);
+
+        // Add options based on conversion type
+        if (conversionType === "split_pdf") {
+          const mode = splitOption || "pages";
+          formData.append("split_mode", mode);
+          formData.append("split_value", splitValue);
+          console.log(`[Single Conversion] Split options - mode: ${mode}, value: ${splitValue}`);
+        }
+        if (conversionType === "compress_pdf") {
+          formData.append("level", compressionLevel.toString());
+          console.log(`[Single Conversion] Compression level: ${compressionLevel}`);
         }
 
+        // Call backend
+        let response: Response;
         try {
-            const formData = new FormData();
-            formData.append("file", file);
-
-            // Add options
-            if (conversionType === "split_pdf") {
-                formData.append("split_mode", splitOption || "pages");
-                formData.append("split_value", splitValue); // Use state
-            }
-            if (conversionType === "compress_pdf") {
-                formData.append("level", compressionLevel.toString());
-            }
-
-            const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-                method: "POST",
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || "Backend conversion failed");
-            }
-
-            const blob = await response.blob();
-            // Get filename from header or guess
-            const contentDisp = response.headers.get("Content-Disposition");
-            let filename = "converted_file";
-            if (contentDisp && contentDisp.includes("filename=")) {
-                filename = contentDisp.split("filename=")[1].replace(/"/g, "");
-            } else {
-                 // Fallback extension
-                 if (blob.type === "application/pdf") filename += ".pdf";
-                 else if (blob.type === "application/zip") filename += ".zip";
-                 else if (blob.type.includes("word")) filename += ".docx";
-            }
-
-            const uploadPath = `${userId}/converted/${Date.now()}_${filename}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from("conversions")
-                .upload(uploadPath, blob, {
-                contentType: blob.type,
-                upsert: false
-                });
-
-            if (uploadError) throw uploadError;
-
-            await supabase
-                .from("conversions")
-                .update({
-                status: "completed",
-                output_file_path: uploadPath,
-                completed_at: new Date().toISOString(),
-                })
-                .eq("id", record.id);
-
-        } catch (err: any) {
-            await supabase
-            .from("conversions")
-            .update({ status: "failed", error_message: err.message })
-            .eq("id", record.id);
-            throw err;
+          response = await fetch(`${BACKEND_URL}${endpoint}`, {
+            method: "POST",
+            body: formData,
+          });
+        } catch (fetchError: any) {
+          throw new ConversionError(
+            `Network error: ${fetchError.message}`,
+            'backend',
+            fetchError
+          );
         }
+
+        console.log(`[Single Conversion] Backend response for ${file.name}:`, response.status);
+
+        if (!response.ok) {
+          let errorMessage = `Status ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.detail || errorData.message || errorMessage;
+          } catch {
+            try {
+              const textError = await response.text();
+              if (textError) errorMessage = textError;
+            } catch {}
+          }
+          throw new ConversionError(errorMessage, 'backend');
+        }
+
+        // Get converted file
+        const blob = await response.blob();
+        
+        if (blob.size === 0) {
+          throw new ConversionError("Received empty file from conversion service", 'backend');
+        }
+
+        // Determine filename
+        const contentDisp = response.headers.get("Content-Disposition");
+        let filename = file.name.replace(/\.[^/.]+$/, "") + "_converted";
+        
+        if (contentDisp && contentDisp.includes("filename=")) {
+          const match = contentDisp.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          if (match && match[1]) {
+            filename = match[1].replace(/['"]/g, "");
+          }
+        } else {
+          // Add appropriate extension
+          if (blob.type === "application/pdf") filename += ".pdf";
+          else if (blob.type === "application/zip") filename += ".zip";
+          else if (blob.type.includes("word") || blob.type.includes("officedocument")) filename += ".docx";
+          else filename += ".pdf";
+        }
+
+        const uploadPath = `${userId}/converted/${Date.now()}_${filename}`;
+
+        // Upload to storage
+        const { error: uploadError } = await supabase.storage
+          .from("conversions")
+          .upload(uploadPath, blob, {
+            contentType: blob.type || "application/octet-stream",
+            upsert: false
+          });
+
+        if (uploadError) {
+          throw new ConversionError(
+            `Failed to save: ${uploadError.message}`,
+            'storage',
+            uploadError
+          );
+        }
+
+        // Update record
+        await supabase
+          .from("conversions")
+          .update({
+            status: "completed",
+            output_file_path: uploadPath,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", record.id);
+
+        successCount++;
+        console.log(`[Single Conversion] Successfully converted ${file.name}`);
+
+      } catch (err: any) {
+        console.error(`[Single Conversion] Failed to convert ${file.name}:`, err);
+        
+        // Update record with failure
+        await supabase
+          .from("conversions")
+          .update({ 
+            status: "failed", 
+            error_message: err.message || "Unknown error" 
+          })
+          .eq("id", record.id);
+
+        errors.push(`${file.name}: ${err.message}`);
+      }
     }
+
+    // Report results
+    if (errors.length > 0 && successCount === 0) {
+      throw new ConversionError(
+        `All conversions failed:\n${errors.join('\n')}`,
+        'backend'
+      );
+    } else if (errors.length > 0) {
+      // Partial success - show warning but don't throw
+      toast({
+        title: "Partial Success",
+        description: `${successCount} file(s) converted. ${errors.length} failed: ${errors[0]}`,
+        variant: "destructive",
+      });
+    }
+    
+    console.log(`[Single Conversion] Completed: ${successCount} success, ${errors.length} failed`);
   };
 
   const handleClose = () => {
@@ -370,22 +605,22 @@ export const ConversionModal = ({
               </button>
             </div>
             {splitOption === "range" && (
-                <input
-                    type="text"
-                    placeholder="e.g. 1-3,5"
-                    className="w-full p-2 rounded bg-secondary text-sm"
-                    value={splitValue}
-                    onChange={(e) => setSplitValue(e.target.value)}
-                />
+              <input
+                type="text"
+                placeholder="e.g. 1-3,5"
+                className="w-full p-2 rounded bg-secondary text-sm"
+                value={splitValue}
+                onChange={(e) => setSplitValue(e.target.value)}
+              />
             )}
-             {splitOption === "pages" && (
-                <input
-                    type="number"
-                    placeholder="e.g. 1"
-                    className="w-full p-2 rounded bg-secondary text-sm"
-                    value={splitValue}
-                    onChange={(e) => setSplitValue(e.target.value)}
-                />
+            {splitOption === "pages" && (
+              <input
+                type="number"
+                placeholder="e.g. 1"
+                className="w-full p-2 rounded bg-secondary text-sm"
+                value={splitValue}
+                onChange={(e) => setSplitValue(e.target.value)}
+              />
             )}
           </div>
         )}
@@ -421,8 +656,8 @@ export const ConversionModal = ({
           {fileUploading
             ? `Uploading... ${progress}%`
             : isProcessing
-                ? "Converting..."
-                : `${title.split(" ").slice(0, 2).join(" ")} - FREE`}
+              ? "Converting..."
+              : `${title.split(" ").slice(0, 2).join(" ")} - FREE`}
         </Button>
       </DialogContent>
     </Dialog>
